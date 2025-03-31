@@ -1,31 +1,31 @@
 # version: '3.8'
 
 services:
-  edinception3d-claude:
-    image: edinception3d-claude:${VERSION:-latest}
+  dork-pms:
+    image: dork-pms:${VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - PORT=3007
+      - PORT=3008
       - HOSTNAME=0.0.0.0
       - NODE_ENV=production
     labels:
       - traefik.enable=true
-      - traefik.http.routers.edinception3d-http.rule=Host(`${DOMAIN}`)
-      - traefik.http.routers.edinception3d-http.entrypoints=http
-      - traefik.http.routers.edinception3d-http.middlewares=https-redirect
-      - traefik.http.routers.edinception3d-https.rule=Host(`${DOMAIN}`)
-      - traefik.http.routers.edinception3d-https.entrypoints=https
-      - traefik.http.routers.edinception3d-https.tls=true
-      - traefik.http.routers.edinception3d-https.tls.certresolver=le
-      - traefik.http.routers.edinception3d-https.service=edinception3d-service
-      - traefik.http.services.edinception3d-service.loadbalancer.server.port=3007
+      - traefik.http.routers.dorkpms-http.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.dorkpms-http.entrypoints=http
+      - traefik.http.routers.dorkpms-http.middlewares=https-redirect
+      - traefik.http.routers.dorkpms-https.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.dorkpms-https.entrypoints=https
+      - traefik.http.routers.dorkpms-https.tls=true
+      - traefik.http.routers.dorkpms-https.tls.certresolver=le
+      - traefik.http.routers.dorkpms-https.service=dorkpms-service
+      - traefik.http.services.dorkpms-service.loadbalancer.server.port=3008
     networks:
       # - web
       - traefik-public
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3007/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3008/api/health"]
       interval: 10s
       timeout: 10s
       retries: 3

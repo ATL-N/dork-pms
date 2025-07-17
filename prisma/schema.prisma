@@ -1,0 +1,293 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ENUMS
+
+enum Role {
+  OWNER
+  MANAGER
+  WORKER
+}
+
+enum FlockType {
+  BROILER
+  LAYER
+  BREEDER
+}
+
+enum FeedType {
+  COMPLETE
+  INGREDIENT
+}
+
+enum InvoiceType {
+  SALES
+  PURCHASE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+// CORE MODELS
+
+model Farm {
+  id          String @id @default(cuid())
+  name        String
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       FarmUser[]
+  flocks      Flock[]
+  feedItems   FeedItem[]
+  inventory   InventoryItem[]
+  expenses    Expense[]
+  revenues    Revenue[]
+  invoices    Invoice[]
+  formulations FeedFormulation[]
+
+  @@index([name])
+}
+
+model User {
+  id            String @id @default(cuid())
+  email         String @unique
+  name          String?
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  farms         FarmUser[]
+  profile       UserProfile?
+  tasksAssigned Task[]
+  feedConsumptionRecorded FeedConsumption[]
+  formulationsCreated FeedFormulation[]
+}
+
+model FarmUser {
+  farmId    String
+  userId    String
+  role      Role     @default(WORKER)
+  assignedAt DateTime @default(now())
+
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([farmId, userId])
+}
+
+model UserProfile {
+  userId      String @id
+  contact     String?
+  hireDate    DateTime?
+  salary      Float?
+  performance String?
+  skills      String[]
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// FARM-SPECIFIC MODELS
+
+model Flock {
+  id          String @id @default(cuid())
+  name        String
+  type        FlockType
+  breed       String
+  quantity    Int
+  location    String
+  startDate   DateTime
+  status      String   @default("active") // active, archived
+  farmId      String
+
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  
+  growthRecords GrowthRecord[]
+  eggProductionRecords EggProductionRecord[]
+  mortalityRecords MortalityRecord[]
+  vaccinationRecords VaccinationRecord[]
+  feedConsumption FeedConsumption[]
+
+  @@index([farmId])
+}
+
+model GrowthRecord {
+  id        String   @id @default(cuid())
+  date      DateTime
+  weight    Float
+  flockId   String
+
+  flock     Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+}
+
+model EggProductionRecord {
+  id              String   @id @default(cuid())
+  date            DateTime
+  totalEggs       Int
+  brokenEggs      Int
+  averageWeight   Float?
+  flockId         String
+
+  flock           Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+}
+
+model MortalityRecord {
+  id        String   @id @default(cuid())
+  date      DateTime
+  quantity  Int
+  cause     String?
+  flockId   String
+
+  flock     Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+}
+
+model VaccinationRecord {
+  id        String   @id @default(cuid())
+  date      DateTime
+  vaccine   String
+  flockId   String
+
+  flock     Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+}
+
+model FeedItem {
+  id            String   @id @default(cuid())
+  name          String
+  type          FeedType
+  category      String?
+  supplier      String?
+  quantity      Float
+  unit          String
+  unitPrice     Float
+  purchaseDate  DateTime
+  expiryDate    DateTime?
+  location      String?
+  batchNumber   String?
+  farmId        String
+
+  farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  consumptions  FeedConsumption[]
+  formulationIngredients FormulationIngredient[]
+
+  @@index([farmId])
+}
+
+model FeedConsumption {
+  id          String   @id @default(cuid())
+  date        DateTime
+  quantity    Float
+  notes       String?
+  flockId     String
+  feedItemId  String
+  recordedById String
+
+  flock       Flock    @relation(fields: [flockId], references: [id])
+  feedItem    FeedItem @relation(fields: [feedItemId], references: [id])
+  recordedBy  User     @relation(fields: [recordedById], references: [id])
+}
+
+model FeedFormulation {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  farmId        String
+  createdById   String
+
+  farm          Farm     @relation(fields: [farmId], references: [id])
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  ingredients   FormulationIngredient[]
+
+  @@index([farmId])
+}
+
+model FormulationIngredient {
+  id              String @id @default(cuid())
+  percentage      Float
+  quantity        Float
+  formulationId   String
+  feedItemId      String
+
+  formulation     FeedFormulation @relation(fields: [formulationId], references: [id], onDelete: Cascade)
+  feedItem        FeedItem        @relation(fields: [feedItemId], references: [id])
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  name          String
+  category      String // e.g., medication, supplies
+  currentStock  Float
+  unit          String
+  minThreshold  Float?
+  supplier      String?
+  farmId        String
+
+  farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  date        DateTime
+  category    String
+  amount      Float
+  description String?
+  vendor      String?
+  farmId      String
+
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model Revenue {
+  id          String   @id @default(cuid())
+  date        DateTime
+  category    String
+  amount      Float
+  description String?
+  customer    String?
+  farmId      String
+
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id        String       @id @default(cuid())
+  date      DateTime
+  dueDate   DateTime?
+  type      InvoiceType
+  status    InvoiceStatus
+  amount    Float
+  farmId    String
+
+  farm      Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  title         String
+  assignedDate  DateTime
+  dueDate       DateTime?
+  status        TaskStatus @default(PENDING)
+  assignedToId  String
+
+  assignedTo    User       @relation(fields: [assignedToId], references: [id])
+}

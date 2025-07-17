@@ -1,0 +1,636 @@
+
+# Project Summary
+
+This document provides a summary of the files in the dork-pms project.
+
+---
+
+## /.gitignore
+
+- **File Path:** `/.gitignore`
+- **Summary:** This file specifies intentionally untracked files that Git should ignore. It includes dependencies, build outputs, environment files, and other miscellaneous files that shouldn't be committed to the repository.
+
+---
+
+## /app/api/health/route.js
+
+- **File Path:** `/app/api/health/route.js`
+- **Summary:** This file defines a simple health check API endpoint.
+- **Functionality:** It exports an async `GET` function that returns a JSON response with `{"status": "ok"}` and a 200 status code. This is a standard way to check if the application is running.
+
+---
+
+## /app/components/employeeManagement/AddEmployeeModal.jsx
+
+- **File Path:** `/app/components/employeeManagement/AddEmployeeModal.jsx`
+- **Summary:** A React component that provides a modal for adding a new employee or editing an existing one.
+- **Key Components:**
+    - A form with input fields for employee details like name, role, department, contact information, email, hire date, and salary.
+    - It also includes functionality to add and remove skills for the employee.
+- **Dependencies:** `react`, `@headlessui/react`.
+
+---
+
+## /app/components/employeeManagement/AssignTaskModal.jsx
+
+- **File Path:** `/app/components/employeeManagement/AssignTaskModal.jsx`
+- **Summary:** A React component that provides a modal for assigning a task to an employee.
+- **Key Components:**
+    - A form with input fields for task title, assigned date, due date, and status.
+- **Dependencies:** `react`, `@headlessui/react`.
+
+---
+
+## /app/components/employeeManagement/DeleteEmployeeModal.jsx
+
+- **File Path:** `/app/components/employeeManagement/DeleteEmployeeModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting an employee.
+- **Key Components:**
+    - Displays a confirmation message before deleting an employee.
+- **Dependencies:** `react`, `../Modal`.
+
+---
+
+## /app/components/feedManagement/AddFeedInventoryModal.jsx
+
+- **File Path:** `/app/components/feedManagement/AddFeedInventoryModal.jsx`
+- **Summary:** A React component that provides a modal for adding or editing a feed inventory item.
+- **Key Components:**
+    - A comprehensive form for feed details including name, type, category, supplier, quantity, unit, price, dates, location, batch number, and detailed nutritional information.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/feedManagement/AddFeedModal.jsx
+
+- **File Path:** `/app/components/feedManagement/AddFeedModal.jsx`
+- **Summary:** A React component that provides a modal for adding a new feed.
+- **Key Components:**
+    - A form with fields for feed name, type, quantity, production and expiry dates.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/AdjustFeedInventoryModal.jsx
+
+- **File Path:** `/app/components/feedManagement/AdjustFeedInventoryModal.jsx`
+- **Summary:** A React component that provides a modal for adjusting the quantity of a feed inventory item.
+- **Key Components:**
+    - A form to enter the adjustment quantity and reason.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/CreateFormulationModal.jsx
+
+- **File Path:** `/app/components/feedManagement/CreateFormulationModal.jsx`
+- **Summary:** A React component that provides a modal for creating a new feed formulation.
+- **Key Components:**
+    - A form for formulation name, target species, ingredients, and nutritional targets.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/DeleteFeedItemModal.jsx
+
+- **File Path:** `/app/components/feedManagement/DeleteFeedItemModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting a feed item.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/DeleteFeedModal.jsx
+
+- **File Path:** `/app/components/feedManagement/DeleteFeedModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting a feed.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/DeleteFormulationModal.jsx
+
+- **File Path:** `/app/components/feedManagement/DeleteFormulationModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting a feed formulation.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/EditConsumptionModal.jsx
+
+- **File Path:** `/app/components/feedManagement/EditConsumptionModal.jsx`
+- **Summary:** A React component that provides a modal for editing a feed consumption record.
+- **Key Components:**
+    - A form to edit flock, quantity, date, and other consumption details.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/feedManagement/FeedAnalyticsModal.jsx
+
+- **File Path:** `/app/components/feedManagement/FeedAnalyticsModal.jsx`
+- **Summary:** A React component that displays feed analytics in a modal.
+- **Key Components:**
+    - Charts for daily feed consumption, total consumption by feed type, and feed inventory by category.
+- **Dependencies:** `react`, `recharts`.
+
+---
+
+## /app/components/feedManagement/FormulateFeedModal.jsx
+
+- **File Path:** `/app/components/feedManagement/FormulateFeedModal.jsx`
+- **Summary:** A React component that provides a modal for creating a feed formulation.
+- **Key Components:**
+    - A detailed form to create a new feed formulation from existing or ad-hoc ingredients.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/RecordConsumptionModal.jsx
+
+- **File Path:** `/app/components/feedManagement/RecordConsumptionModal.jsx`
+- **Summary:** A React component that provides a modal for recording feed consumption.
+- **Key Components:**
+    - A form to record the date, feed, quantity, flock, and who recorded the consumption.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/feedManagement/RecordFeedConsumptionModal.jsx
+
+- **File Path:** `/app/components/feedManagement/RecordFeedConsumptionModal.jsx`
+- **Summary:** A React component that provides a modal for recording feed consumption for a specific feed.
+- **Key Components:**
+    - A form to record consumption details for a pre-selected feed.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/financialManagement/AddExpenseModal.jsx
+
+- **File Path:** `/app/components/financialManagement/AddExpenseModal.jsx`
+- **Summary:** A React component that provides a modal for adding a new expense record.
+- **Key Components:**
+    - A form for date, category, amount, description, and vendor.
+- **Dependencies:** `react`, `@headlessui/react`.
+
+---
+
+## /app/components/financialManagement/AddInvoiceModal.jsx
+
+- **File Path:** `/app/components/financialManagement/AddInvoiceModal.jsx`
+- **Summary:** A React component that provides a modal for creating a sales or purchase invoice.
+- **Key Components:**
+    - A form for invoice type, amount, dates, status, and customer/vendor details.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/financialManagement/AddRevenueModal.jsx
+
+- **File Path:** `/app/components/financialManagement/AddRevenueModal.jsx`
+- **Summary:** A React component that provides a modal for adding a new revenue record.
+- **Key Components:**
+    - A form for date, category, amount, description, and customer.
+- **Dependencies:** `react`, `@headlessui/react`.
+
+---
+
+## /app/components/financialManagement/InvoicingComponent.jsx
+
+- **File Path:** `/app/components/financialManagement/InvoicingComponent.jsx`
+- **Summary:** A React component for managing invoices.
+- **Key Components:**
+    - A table displaying a list of invoices.
+    - A modal for viewing detailed information about a selected invoice.
+- **Dependencies:** `react`, `@headlessui/react`, `lucide-react`.
+
+---
+
+## /app/components/flockManagement/AddFlockModal.jsx
+
+- **File Path:** `/app/components/flockManagement/AddFlockModal.jsx`
+- **Summary:** A React component that provides a modal for adding or editing a flock.
+- **Key Components:**
+    - A form for flock name, type, breed, quantity, location, and start date.
+- **Dependencies:** `react`, `../Modal`.
+
+---
+
+## /app/components/flockManagement/DeleteFlockModal.jsx
+
+- **File Path:** `/app/components/flockManagement/DeleteFlockModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting a flock.
+- **Dependencies:** `react`, `../Modal`.
+
+---
+
+## /app/components/flockManagement/RecordMortalityModal.jsx
+
+- **File Path:** `/app/components/flockManagement/RecordMortalityModal.jsx`
+- **Summary:** A React component that provides a modal for recording flock mortality.
+- **Key Components:**
+    - A form to enter the number of birds lost and the cause of death.
+- **Dependencies:** `react`, `../Modal`.
+
+---
+
+## /app/components/flockManagement/RecordVaccinationModal.jsx
+
+- **File Path:** `/app/components/flockManagement/RecordVaccinationModal.jsx`
+- **Summary:** A React component that provides a modal for recording a flock vaccination.
+- **Key Components:**
+    - A form for the vaccine name and vaccination date.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/flockManagement/RecordWeightModal.jsx
+
+- **File Path:** `/app/components/flockManagement/RecordWeightModal.jsx`
+- **Summary:** A React component that provides a modal for recording the weight of a flock.
+- **Key Components:**
+    - A form to enter the new weight in grams.
+- **Dependencies:** `react`, `../Modal`.
+
+---
+
+## /app/components/inventoryManagement/AddInventoryItemModal.jsx
+
+- **File Path:** `/app/components/inventoryManagement/AddInventoryItemModal.jsx`
+- **Summary:** A React component that provides a modal for adding or editing an inventory item.
+- **Key Components:**
+    - A form for item name, category, type, stock, unit, threshold, supplier, price, and location.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/inventoryManagement/DeleteInventoryItemModal.jsx
+
+- **File Path:** `/app/components/inventoryManagement/DeleteInventoryItemModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting an inventory item.
+- **Dependencies:** `lucide-react`.
+
+---
+
+## /app/components/inventoryManagement/RequestInventoryModal.jsx
+
+- **File Path:** `/app/components/inventoryManagement/RequestInventoryModal.jsx`
+- **Summary:** A React component that provides a modal for requesting inventory.
+- **Key Components:**
+    - A form for request quantity, reason, and expected delivery date.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/layout/Header.jsx
+
+- **File Path:** `/app/components/layout/Header.jsx`
+- **Summary:** The main header component for the application.
+- **Key Components:**
+    - Contains the sidebar toggle button, dark mode switch, notifications dropdown, and user profile menu.
+- **Dependencies:** `react`, `next/link`, `lucide-react`.
+
+---
+
+## /app/components/layout/Layout.jsx
+
+- **File Path:** `/app/components/layout/Layout.jsx`
+- **Summary:** The main layout structure for the application.
+- **Key Components:**
+    - Integrates the `Header` and `Sidebar` components to create the overall page layout.
+    - Manages the state for the sidebar and dark mode.
+- **Dependencies:** `react`, `./Header`, `./Sidebar`.
+
+---
+
+## /app/components/layout/Sidebar.jsx
+
+- **File Path:** `/app/components/layout/Sidebar.jsx`
+- **Summary:** The sidebar navigation component.
+- **Key Components:**
+    - A list of navigation links with icons for different sections of the application.
+    - Supports collapsible submenus.
+- **Dependencies:** `react`, `next/link`, `lucide-react`.
+
+---
+
+## /app/components/Modal.jsx
+
+- **File Path:** `/app/components/Modal.jsx`
+- **Summary:** A generic, reusable modal component.
+- **Key Components:**
+    - Provides a base structure for modals with a close button, title, and content area.
+    - Includes a confirmation prompt for actions.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/productionTracking/AddProductionRecordModal.jsx
+
+- **File Path:** `/app/components/productionTracking/AddProductionRecordModal.jsx`
+- **Summary:** A React component that provides a modal for adding a new production record for either layers or broilers.
+- **Key Components:**
+    - A form that dynamically changes based on the production type (layer or broiler).
+- **Dependencies:** `react`, `@headlessui/react`.
+
+---
+
+## /app/components/productionTracking/DeleteProductionRecordModal.jsx
+
+- **File Path:** `/app/components/productionTracking/DeleteProductionRecordModal.jsx`
+- **Summary:** A React component that provides a confirmation modal for deleting a production record.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/components/productionTracking/EditEggProductionModal.jsx
+
+- **File Path:** `/app/components/productionTracking/EditEggProductionModal.jsx`
+- **Summary:** A React component that provides a modal for editing an egg production record.
+- **Key Components:**
+    - A form to edit details like date, flock, eggs collected, and damaged eggs.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/productionTracking/EditMeatProductionModal.jsx
+
+- **File Path:** `/app/components/productionTracking/EditMeatProductionModal.jsx`
+- **Summary:** A React component that provides a modal for editing a meat production record.
+- **Key Components:**
+    - A form to edit details like date, flock, birds processed, and average weight.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/productionTracking/RecordEggProductionModal.jsx
+
+- **File Path:** `/app/components/productionTracking/RecordEggProductionModal.jsx`
+- **Summary:** A React component that provides a modal for recording egg production.
+- **Key Components:**
+    - A form to record date, flock, eggs collected, damaged eggs, and other related data.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/productionTracking/RecordMeatProductionModal.jsx
+
+- **File Path:** `/app/components/productionTracking/RecordMeatProductionModal.jsx`
+- **Summary:** A React component that provides a modal for recording meat production.
+- **Key Components:**
+    - A form to record date, flock, birds processed, average weight, and other related data.
+- **Dependencies:** `react`.
+
+---
+
+## /app/components/reportsAnalytics/DataAnalysisSummary.jsx
+
+- **File Path:** `/app/components/reportsAnalytics/DataAnalysisSummary.jsx`
+- **Summary:** A React component that displays a summary of data analysis.
+- **Key Components:**
+    - Charts for monthly production overview and mortality rate comparison.
+    - A section for key performance indicators (KPIs).
+- **Dependencies:** `recharts`, `lucide-react`.
+
+---
+
+## /app/components/reportsAnalytics/ForecastingReport.jsx
+
+- **File Path:** `/app/components/reportsAnalytics/ForecastingReport.jsx`
+- **Summary:** A React component that displays forecasting reports.
+- **Key Components:**
+    - A chart to visualize forecasts for production, mortality, or revenue.
+    - A summary of the forecast with key metrics.
+- **Dependencies:** `react`, `lucide-react`, `recharts`.
+
+---
+
+## /app/components/reportsAnalytics/HistoricalDataAnalysis.jsx
+
+- **File Path:** `/app/components/reportsAnalytics/HistoricalDataAnalysis.jsx`
+- **Summary:** A React component that displays historical data analysis.
+- **Key Components:**
+    - A line chart to analyze historical data for different metrics over time.
+- **Dependencies:** `react`, `lucide-react`, `recharts`.
+
+---
+
+## /app/components/reportsAnalytics/PerformanceBenchmarkReport.jsx
+
+- **File Path:** `/app/components/reportsAnalytics/PerformanceBenchmarkReport.jsx`
+- **Summary:** A React component that displays performance benchmark reports.
+- **Key Components:**
+    - A table comparing farm performance against industry averages.
+    - A chart for regional comparative analysis.
+- **Dependencies:** `react`, `lucide-react`.
+
+---
+
+## /app/employee-management/page.jsx
+
+- **File Path:** `/app/employee-management/page.jsx`
+- **Summary:** The main page for the Employee Management section.
+- **Functionality:**
+    - Displays a list of active and inactive employees.
+    - Allows searching and filtering of employees.
+    - Provides options to add, edit, and delete employees, as well as assign tasks.
+- **Dependencies:** `react`, `lucide-react`, and various employee management modals.
+
+---
+
+## /app/feed-management/page.jsx
+
+- **File Path:** `/app/feed-management/page.jsx`
+- **Summary:** The main page for the Feed Management section.
+- **Functionality:**
+    - Tabs for feed inventory, consumption tracking, and feed formulation.
+    - Allows adding, editing, and deleting feed items, recording consumption, and creating formulations.
+    - Includes analytics and visualizations for feed data.
+- **Dependencies:** `react`, `lucide-react`, `recharts`, and various feed management modals.
+
+---
+
+## /app/financial-management/page.jsx
+
+- **File Path:** `/app/financial-management/page.jsx`
+- **Summary:** The main page for the Financial Management section.
+- **Functionality:**
+    - Tabs for financial overview, expenses, revenues, and invoices.
+    - Provides functionality to add, view, and manage financial records.
+    - Includes charts for financial trends.
+- **Dependencies:** `react`, `lucide-react`, `recharts`, and various financial management modals.
+
+---
+
+## /app/flock-management/page.jsx
+
+- **File Path:** `/app/flock-management/page.jsx`
+- **Summary:** The main page for the Flock Management section.
+- **Functionality:**
+    - Displays a list of active and archived flocks.
+    - Allows searching and filtering of flocks.
+    - Provides options to add, edit, and delete flocks, as well as record weight, mortality, and vaccinations.
+- **Dependencies:** `react`, `lucide-react`, `recharts`, and various flock management modals.
+
+---
+
+## /app/globals.css
+
+- **File Path:** `/app/globals.css`
+- **Summary:** The global stylesheet for the application.
+- **Functionality:**
+    - Imports Tailwind CSS.
+    - Defines CSS custom properties (variables) for light and dark themes.
+    - Includes custom component styles.
+
+---
+
+## /app/inventory-management/page.jsx
+
+- **File Path:** `/app/inventory-management/page.jsx`
+- **Summary:** The main page for the Inventory Management section.
+- **Functionality:**
+    - Tabs for supplies and medications.
+    - Allows adding, editing, deleting, and requesting inventory items.
+    - Displays detailed information about each inventory item.
+- **Dependencies:** `react`, `lucide-react`, and various inventory management modals.
+
+---
+
+## /app/layout.js
+
+- **File Path:** `/app/layout.js`
+- **Summary:** The root layout component for the Next.js application.
+- **Functionality:**
+    - Sets up the main HTML structure.
+    - Includes the main layout with a sidebar and header.
+    - Manages the dark mode state.
+- **Dependencies:** `next/link`, `lucide-react`.
+
+---
+
+## /app/page.js
+
+- **File Path:** `/app/page.js`
+- **Summary:** The main dashboard page of the application.
+- **Functionality:**
+    - Displays key performance indicators (KPIs).
+    - Shows charts for monthly production, revenue & expenses, feed consumption, and flock distribution.
+    - Lists recent alerts.
+- **Dependencies:** `react`, `recharts`.
+
+---
+
+## /app/production-tracking/page.jsx
+
+- **File Path:** `/app/production-tracking/page.jsx`
+- **Summary:** The main page for the Production Tracking section.
+- **Functionality:**
+    - Tabs for layer and broiler production.
+    - Allows adding, editing, and deleting production records.
+    - Displays detailed information and charts for each production record.
+- **Dependencies:** `react`, `lucide-react`, `recharts`, and various production tracking modals.
+
+---
+
+## /app/reports-analytics/page.jsx
+
+- **File Path:** `/app/reports-analytics/page.jsx`
+- **Summary:** The main page for the Reports & Analytics section.
+- **Functionality:**
+    - Tabs for different types of reports: Data Analysis Summary, Historical Data, Performance Benchmark, and Forecasting.
+- **Dependencies:** `react`, `lucide-react`, and various report components.
+
+---
+
+## /docker-compose.yml
+
+- **File Path:** `/docker-compose.yml`
+- **Summary:** A Docker Compose file for defining and running the multi-container Docker application.
+- **Functionality:**
+    - Defines the `dork-pms` service, building it from the Dockerfile.
+    - Sets up environment variables, labels for Traefik proxy, and a health check.
+
+---
+
+## /Dockerfile
+
+- **File Path:** `/Dockerfile`
+- **Summary:** A Dockerfile for building the Next.js application image.
+- **Functionality:**
+    - Uses a multi-stage build to create a lean production image.
+    - Installs dependencies, builds the application, and sets up the production environment.
+
+---
+
+## /jsconfig.json
+
+- **File Path:** `/jsconfig.json`
+- **Summary:** A configuration file for the JavaScript language service.
+- **Functionality:**
+    - Defines path aliases for easier module imports (e.g., `@/*`).
+
+---
+
+## /next.config.mjs
+
+- **File Path:** `/next.config.mjs`
+- **Summary:** The configuration file for the Next.js framework.
+- **Functionality:**
+    - An empty configuration object, meaning the project uses the default Next.js settings.
+
+---
+
+## /package-lock.json
+
+- **File Path:** `/package-lock.json`
+- **Summary:** This file is automatically generated for any operations where npm modifies either the `node_modules` tree or `package.json`. It describes the exact tree that was generated, such that subsequent installs are able to generate identical trees, regardless of intermediate dependency updates.
+
+---
+
+## /package.json
+
+- **File Path:** `/package.json`
+- **Summary:** This file holds various metadata relevant to the project.
+- **Functionality:**
+    - Lists the project's dependencies and devDependencies.
+    - Defines scripts for running, building, and linting the application.
+
+---
+
+## /postcss.config.mjs
+
+- **File Path:** `/postcss.config.mjs`
+- **Summary:** The configuration file for PostCSS.
+- **Functionality:**
+    - Specifies the PostCSS plugins to be used, in this case, `@tailwindcss/postcss`.
+
+---
+
+## /public/
+
+- **File Path:** `/public/`
+- **Summary:** This directory contains static assets that are publicly accessible.
+- **Contents:**
+    - `file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`: SVG images used in the application.
+
+---
+
+## /README.md
+
+- **File Path:** `/README.md`
+- **Summary:** The README file for the project.
+- **Contents:**
+    - Information on how to get started with the project, including running the development server.
+    - Links to Next.js documentation and deployment resources.
+
+---
+
+## /tailwind.config.js
+
+- **File Path:** `/tailwind.config.js`
+- **Summary:** The configuration file for Tailwind CSS.
+- **Functionality:**
+    - Configures the content paths for Tailwind to scan for classes.
+    - Sets up dark mode.
+    - Extends the default theme with custom colors.

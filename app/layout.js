@@ -4,7 +4,7 @@
 import "./globals.css";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, Bell, User, Moon, Sun, ChevronDown } from "lucide-react";
+import { Menu, Bell, User, Moon, Sun, ChevronDown, Message } from "lucide-react";
 
 export default function RootLayout({ children }) {
   const [darkMode, setDarkMode] = useState(false);
@@ -67,7 +67,7 @@ export default function RootLayout({ children }) {
             <nav className="flex-1 overflow-y-auto py-4">
               <ul className="space-y-1 px-3">
                 {[
-                  { name: "Dashboard", path: "/", icon: "grid" },
+                  { name: "Dashboard222", path: "/", icon: "grid" },
                   {
                     name: "Flock Management",
                     path: "/flock-management",
@@ -97,6 +97,16 @@ export default function RootLayout({ children }) {
                     name: "Employee Management",
                     path: "/employee-management",
                     icon: "users",
+                  },
+                  {
+                    name: "Veterinarians",
+                    path: "/veterinarians",
+                    icon: "users",
+                  },
+                  {
+                    name: "Chat",
+                    path: "/chat",
+                    icon: "message-circle",
                   },
                   {
                     name: "Reports & Analytics",

@@ -39,7 +39,7 @@ const Sidebar = ({ open }) => {
 
   const menuItems = [
     {
-      name: "Dashboard",
+      name: "Dashboard22",
       icon: <Home size={20} />,
       path: "/",
       submenu: null,
@@ -92,6 +92,18 @@ const Sidebar = ({ open }) => {
       name: "Staff",
       icon: <Users size={20} />,
       path: "/staff",
+      submenu: null,
+    },
+    {
+      name: "Veterinarians",
+      icon: <Users size={20} />,
+      path: "/veterinarians",
+      submenu: null,
+    },
+    {
+      name: "Chat",
+      icon: <Users size={20} />,
+      path: "/chat",
       submenu: null,
     },
     {

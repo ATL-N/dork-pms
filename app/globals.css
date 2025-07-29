@@ -85,4 +85,17 @@ body {
   .badge-info {
     @apply bg-[color:var(--info)] text-white text-xs px-2 py-1 rounded-full;
   }
+
+  /* React Big Calendar Styles */
+  .rbc-toolbar button {
+    @apply bg-[color:var(--card)] text-[color:var(--foreground)] border border-[color:var(--border)] rounded-md px-3 py-1.5 text-sm transition-colors;
+  }
+
+  .rbc-toolbar button:hover, .rbc-toolbar button:focus {
+    @apply bg-[color:var(--muted)] outline-none;
+  }
+
+  .rbc-toolbar .rbc-btn-group .rbc-active {
+    @apply bg-[color:var(--primary)] text-white;
+  }
 }

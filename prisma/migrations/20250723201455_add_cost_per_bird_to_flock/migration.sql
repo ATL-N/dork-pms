@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Flock" ADD COLUMN     "costPerBird" DOUBLE PRECISION,
+ALTER COLUMN "location" DROP NOT NULL;

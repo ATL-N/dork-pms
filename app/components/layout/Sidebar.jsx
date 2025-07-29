@@ -1,211 +1,348 @@
-'use client'
-import { useState } from "react";
+"use client";
+
 import Link from "next/link";
-// import { useRouter } from "next/router";
+import { usePathname } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Home,
+  Menu,
+  ChevronDown,
+  Grid,
+  Feather,
+  Package,
+  TrendingUp,
+  Heart,
+  DollarSign,
+  Box,
   BarChart2,
   Users,
-  Egg,
-  Droplets,
-  ShoppingCart,
-  Package,
-  Clipboard,
-  FileText,
-  Calendar,
-  Settings,
-  AlertTriangle,
-  ChevronDown,
+  MessageCircle,
+  ShieldCheck,
+  X, // Added for the close icon in the modal
 } from "lucide-react";
+import { useFarm } from "../../context/FarmContext"; // Make sure this path is correct
 
-const Sidebar = ({ open }) => {
-//   const router = useRouter();
-  const [openMenus, setOpenMenus] = useState({
-    inventory: false,
-    production: false,
-    reports: false,
-  });
+// --- Helper Functions and Data ---
 
-  const toggleMenu = (menu) => {
-    setOpenMenus({
-      ...openMenus,
-      [menu]: !openMenus[menu],
-    });
-  };
+// Define your navigation items with icons and roles
+const navigationItems = [
+  {
+    name: "Dashboard",
+    path: "/dashboard",
+    icon: Grid,
+    roles: ["OWNER", "MANAGER", "WORKER", "VET", "ADMIN"],
+  },
+  {
+    name: "Farm Operations",
+    icon: Feather,
+    roles: ["OWNER", "MANAGER", "WORKER"],
+    children: [
+      { name: "Flocks", path: "/flocks" },
+      { name: "Feed", path: "/feed" },
+      { name: "Health", path: "/health" },
+      { name: "Production", path: "/production" },
+    ],
+  },
+  {
+    name: "Business",
+    icon: DollarSign,
+    roles: ["OWNER", "MANAGER"],
+    children: [
+      { name: "Finances", path: "/finances" },
+      { name: "Inventory", path: "/inventory" },
+      { name: "Reports", path: "/reports" },
+    ],
+  },
+  {
+    name: "Team",
+    icon: Users,
+    roles: ["OWNER", "MANAGER"],
+    children: [
+      { name: "Staff", path: "/staff" },
+      { name: "Chat", path: "/chat" },
+    ],
+  },
+  {
+    name: "Veterinarians",
+    path: "/veterinarians",
+    icon: Heart,
+    roles: ["VET"],
+  },
+  { name: "Admin", path: "/admin", icon: ShieldCheck, roles: ["ADMIN"] },
+];
 
-  const isActive = (path) => {
-    // return router.pathname === path || router.pathname.startsWith(`${path}/`);
-  };
+// Function to filter navigation items based on user role
+const filterNavigation = (items, userRole) => {
+  return items
+    .map((item) => {
+      if (!item.roles.includes(userRole)) return null;
+      return item;
+    })
+    .filter(Boolean);
+};
 
-  const menuItems = [
-    {
-      name: "Dashboard22",
-      icon: <Home size={20} />,
-      path: "/",
-      submenu: null,
-    },
-    {
-      name: "Analytics",
-      icon: <BarChart2 size={20} />,
-      path: "/analytics",
-      submenu: null,
-    },
-    {
-      name: "Flock Management",
-      icon: <Egg size={20} />,
-      path: "/flocks",
-      submenu: null,
-    },
-    {
-      name: "Production",
-      icon: <Clipboard size={20} />,
-      submenu: "production",
-      items: [
-        { name: "Egg Collection", path: "/production/eggs" },
-        { name: "Daily Records", path: "/production/daily" },
-        { name: "Mortality", path: "/production/mortality" },
-      ],
-    },
-    {
-      name: "Inventory",
-      icon: <Package size={20} />,
-      submenu: "inventory",
-      items: [
-        { name: "Feed Stock", path: "/inventory/feed" },
-        { name: "Medication", path: "/inventory/medication" },
-        { name: "Equipment", path: "/inventory/equipment" },
-      ],
-    },
-    {
-      name: "Health",
-      icon: <Droplets size={20} />,
-      path: "/health",
-      submenu: null,
-    },
-    {
-      name: "Sales",
-      icon: <ShoppingCart size={20} />,
-      path: "/sales",
-      submenu: null,
-    },
-    {
-      name: "Staff",
-      icon: <Users size={20} />,
-      path: "/staff",
-      submenu: null,
-    },
-    {
-      name: "Veterinarians",
-      icon: <Users size={20} />,
-      path: "/veterinarians",
-      submenu: null,
-    },
-    {
-      name: "Chat",
-      icon: <Users size={20} />,
-      path: "/chat",
-      submenu: null,
-    },
-    {
-      name: "Reports",
-      icon: <FileText size={20} />,
-      submenu: "reports",
-      items: [
-        { name: "Production Reports", path: "/reports/production" },
-        { name: "Financial Reports", path: "/reports/financial" },
-        { name: "Inventory Reports", path: "/reports/inventory" },
-      ],
-    },
-    {
-      name: "Schedule",
-      icon: <Calendar size={20} />,
-      path: "/schedule",
-      submenu: null,
-    },
-    {
-      name: "Alerts",
-      icon: <AlertTriangle size={20} />,
-      path: "/alerts",
-      submenu: null,
-    },
-    {
-      name: "Settings",
-      icon: <Settings size={20} />,
-      path: "/settings",
-      submenu: null,
-    },
-  ];
+// --- Custom Hooks ---
+
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) setMatches(media.matches);
+    const listener = () => setMatches(media.matches);
+    window.addEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
+  }, [matches, query]);
+  return matches;
+};
+
+// --- Components ---
+
+// NavItem component for the main sidebar
+const NavItem = ({ item, sidebarOpen }) => {
+  const pathname = usePathname();
+  const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+
+  if (item.children) {
+    return (
+      <li>
+        <button
+          onClick={() => setIsSubMenuOpen(!isSubMenuOpen)}
+          className="flex items-center justify-between w-full gap-3 p-2 rounded-md hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <item.icon size={20} className="text-[color:var(--primary)]" />
+            {sidebarOpen && <span>{item.name}</span>}
+          </div>
+          {sidebarOpen && (
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${
+                isSubMenuOpen ? "rotate-180" : ""
+              }`}
+            />
+          )}
+        </button>
+        {isSubMenuOpen && sidebarOpen && (
+          <ul className="pl-6 pt-2 space-y-1">
+            {item.children.map((child) => (
+              <li key={child.path}>
+                <Link
+                  href={child.path}
+                  className={`flex items-center gap-3 p-2 rounded-md text-sm hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors ${
+                    pathname === child.path ? "bg-[color:var(--accent)]" : ""
+                  }`}
+                >
+                  {child.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
 
   return (
-    <aside
-      className={`fixed top-0 left-0 h-full bg-card border-r border-border pt-header w-sidebar z-40 transition-transform duration-300 ${
-        open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-      }`}
-    >
-      <div className="h-full overflow-y-auto py-4">
-        <nav>
-          <ul>
-            {menuItems.map((item, index) => (
-              <li key={index} className="mb-1">
-                {item.submenu ? (
-                  <div>
-                    <button
-                      onClick={() => toggleMenu(item.submenu)}
-                      className={`flex items-center justify-between w-full px-4 py-3 text-left hover:bg-secondary rounded-md ${
-                        openMenus[item.submenu] ? "bg-secondary" : ""
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <span className="mr-3 text-foreground">
-                          {item.icon}
-                        </span>
-                        <span>{item.name}</span>
-                      </div>
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${
-                          openMenus[item.submenu] ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
+    <li>
+      <Link
+        href={item.path}
+        className={`flex items-center gap-3 p-2 rounded-md hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors ${
+          pathname === item.path ? "bg-[color:var(--accent)]" : ""
+        }`}
+      >
+        <item.icon size={20} className="text-[color:var(--primary)]" />
+        {sidebarOpen && <span>{item.name}</span>}
+      </Link>
+    </li>
+  );
+};
 
-                    {openMenus[item.submenu] && (
-                      <ul className="ml-10 mt-1 space-y-1">
-                        {item.items.map((subItem, subIndex) => (
-                          <li key={subIndex}>
-                            <Link
-                              href={subItem.path}
-                              className={`block px-4 py-2 rounded-md hover:bg-secondary ${
-                                isActive(subItem.path)
-                                  ? "bg-primary/10 text-primary"
-                                  : ""
-                              }`}
-                            >
-                              {subItem.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    href={item.path}
-                    className={`flex items-center px-4 py-3 rounded-md hover:bg-secondary ${
-                      isActive(item.path) ? "bg-primary/10 text-primary" : ""
-                    }`}
-                  >
-                    <span className="mr-3 text-foreground">{item.icon}</span>
-                    <span>{item.name}</span>
-                  </Link>
-                )}
-              </li>
+// --- Modal for Submenus on Mobile ---
+function SubMenuModal({ items, title, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[color:var(--card)] w-full max-w-md rounded-t-lg shadow-lg p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-[color:var(--primary)]">
+            {title}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-[color:var(--muted-foreground)]"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <ul>
+          {items.map((subItem) => (
+            <li key={subItem.path}>
+              <Link
+                href={subItem.path}
+                className="block p-3 rounded-md hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors"
+                onClick={onClose}
+              >
+                {subItem.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// Tabs component for smaller devices
+function Tabs({ navItems }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeSubMenu, setActiveSubMenu] = useState({ title: "", items: [] });
+
+  const handleTabClick = (item) => {
+    if (item.children && item.children.length > 0) {
+      setActiveSubMenu({ title: item.name, items: item.children });
+      setModalOpen(true);
+    }
+    // If no children, the Link component will handle navigation
+  };
+
+  const topLevelItems = navItems.map((item) => ({
+    ...item,
+    icon: <item.icon size={24} />,
+  }));
+
+  return (
+    <>
+      <nav className="fixed bottom-0 w-full bg-[color:var(--card)] border-t border-[color:var(--border)] md:hidden">
+        <ul className="flex justify-around">
+          {topLevelItems.map((item) => (
+            <li key={item.name} className="flex-1">
+              <Link
+                href={item.children ? "#" : item.path}
+                onClick={() => handleTabClick(item)}
+                className="flex flex-col items-center justify-center p-2 text-center text-[color:var(--foreground)] hover:bg-[color:var(--accent)] transition-colors"
+                title={item.name}
+              >
+                <span className="text-[color:var(--primary)]">{item.icon}</span>
+                <span className="text-xs">{item.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {modalOpen && (
+        <SubMenuModal
+          items={activeSubMenu.items}
+          title={activeSubMenu.title}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// Main Sidebar component
+function Sidebar({ session, navItems }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [width, setWidth] = useState(256);
+  const isResizing = useRef(false);
+
+  useEffect(() => {
+    const savedSidebarOpen = localStorage.getItem("sidebarOpen");
+    if (savedSidebarOpen !== null) setSidebarOpen(JSON.parse(savedSidebarOpen));
+    const savedWidth = localStorage.getItem("sidebarWidth");
+    if (savedWidth !== null) setWidth(parseInt(savedWidth, 10));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("sidebarOpen", JSON.stringify(sidebarOpen));
+  }, [sidebarOpen]);
+  useEffect(() => {
+    localStorage.setItem("sidebarWidth", width);
+  }, [width]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (isResizing.current) {
+      let newWidth = e.clientX;
+      if (newWidth < 200) newWidth = 200;
+      if (newWidth > 500) newWidth = 500;
+      setWidth(newWidth);
+    }
+  }, []);
+
+  const handleMouseUp = () => {
+    isResizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+  };
+
+  return (
+    <div className="hidden md:flex">
+      <div
+        className="bg-[color:var(--card)] text-[color:var(--card-foreground)] border-r border-[color:var(--border)] flex flex-col transition-all duration-300"
+        style={{ width: sidebarOpen ? `${width}px` : "80px" }}
+      >
+        <div className="p-4 flex items-center gap-3 border-b border-[color:var(--border)] h-16">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <Feather className="text-primary-500" size={28} />
+            {sidebarOpen && (
+              <h1 className="text-xl font-bold text-[color:var(--primary)] whitespace-nowrap">
+                Dork PMS
+              </h1>
+            )}
+          </Link>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="ml-auto text-[color:var(--muted-foreground)]"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-4">
+          <ul className="space-y-1 px-3">
+            {navItems.map((item) => (
+              <NavItem key={item.name} item={item} sidebarOpen={sidebarOpen} />
             ))}
           </ul>
         </nav>
       </div>
-    </aside>
+      <div
+        className="w-2 h-full cursor-col-resize group"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="w-0.5 h-full bg-transparent group-hover:bg-[color:var(--primary)] transition-colors duration-200"></div>
+      </div>
+    </div>
   );
-};
+}
 
-export default Sidebar;
+// Main component that renders either Sidebar or Tabs
+export default function ResponsiveSidebar({ session }) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const { currentFarm } = useFarm();
+
+  const userType = session?.user?.userType;
+  const farmerRole = currentFarm?.users?.find(
+    (user) => user.userId === session?.user?.id
+  )?.role;
+  const role =
+    userType === "ADMIN" ? "ADMIN" : userType === "VET" ? "VET" : farmerRole;
+
+  const filteredNavItems = role ? filterNavigation(navigationItems, role) : [];
+
+  if (isMobile) {
+    return <Tabs navItems={filteredNavItems} />;
+  }
+
+  return <Sidebar session={session} navItems={filteredNavItems} />;
+}

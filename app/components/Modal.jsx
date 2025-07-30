@@ -39,9 +39,8 @@ const Modal = ({
   };
 
   const handleCloseClick = () => {
-    if (onClose) {
-      onClose();
-    }
+    setShowConfirmationPrompt(true);
+    setAction("close");
   };
 
   const handleConfirmClick = () => {

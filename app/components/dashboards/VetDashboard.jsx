@@ -1,12 +1,37 @@
 // app/components/dashboards/VetDashboard.jsx
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stethoscope, ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import SummaryCard from './SummaryCard';
 import Alerts from './Alerts';
+import LoadingSpinner from '../LoadingSpinner';
 
-export default function VetDashboard({ accessibleFarms = [] }) {
+export default function VetDashboard() {
+  const [accessibleFarms, setAccessibleFarms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch('/api/dashboard/vet');
+        if (!res.ok) throw new Error('Failed to fetch vet data');
+        const jsonData = await res.json();
+        setAccessibleFarms(jsonData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <p className="text-red-500 text-center">{error}</p>;
+
   const farmsNeedingAttention = accessibleFarms.filter(
     farm => farm.healthStatus === 'Needs Attention'
   );

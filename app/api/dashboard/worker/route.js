@@ -1,0 +1,36 @@
+// app/api/dashboard/worker/route.js
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { getCurrentUser } from '@/app/lib/session';
+
+const prisma = new PrismaClient();
+
+export async function GET() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    const tasks = await prisma.task.findMany({
+        where: {
+            assignedToId: currentUser.id,
+            status: { in: ['PENDING', 'IN_PROGRESS'] }
+        },
+        include: {
+            farm: {
+                select: { name: true }
+            }
+        }
+    });
+
+    // For workers, alerts might be farm-specific and pushed through a different mechanism.
+    // For now, returning an empty array.
+    return NextResponse.json({ tasks, alerts: [] });
+
+  } catch (error) {
+    console.error('[API/DASHBOARD/WORKER]', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
+}

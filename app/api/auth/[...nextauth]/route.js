@@ -48,6 +48,35 @@ export const authOptions = {
         token.email = user.email;
         token.name = user.name;
         token.userType = user.userType;
+        
+        // Fetch farm associations for the user
+        const farmUsers = await prisma.farmUser.findMany({
+          where: { userId: user.id },
+          select: {
+            farmId: true,
+            role: true,
+            farm: {
+              select: {
+                name: true,
+                ownerId: true,
+              }
+            }
+          }
+        });
+
+        const ownedFarms = await prisma.farm.findMany({
+            where: { ownerId: user.id },
+            select: { id: true }
+        });
+
+        token.farms = farmUsers.map(fu => ({
+          id: fu.farmId,
+          name: fu.farm.name,
+          role: fu.role,
+          isOwner: fu.farm.ownerId === user.id
+        }));
+        
+        token.isOwner = ownedFarms.length > 0 || token.farms.some(f => f.role === 'OWNER');
       }
       return token;
     },
@@ -57,6 +86,8 @@ export const authOptions = {
         session.user.email = token.email;
         session.user.name = token.name;
         session.user.userType = token.userType;
+        session.user.farms = token.farms; // Add farms to session
+        session.user.isOwner = token.isOwner; // Add owner status to session
       }
       return session;
     }

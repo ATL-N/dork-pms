@@ -24,17 +24,12 @@ echo "Running database migrations..."
 npx prisma migrate deploy
 
 # 3. Check if the database is seeded
-echo "Checking if General Chat exists..."
-CHAT_COUNT=$(psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM \"Conversation\" WHERE name = 'General Chat';")
-
-# Trim whitespace from the command output
-CHAT_COUNT=$(echo "$CHAT_COUNT" | xargs)
-
-if [ "$CHAT_COUNT" -eq 0 ]; then
-  echo "General Chat not found. Seeding database..."
-  npx prisma db seed
+echo "Checking if database is seeded..."
+if node scripts/check-seed.js; then
+  echo "Database is already seeded. Skipping seed."
 else
-  echo "General Chat found. Skipping seed."
+  echo "Database is not seeded. Seeding now..."
+  npx prisma db seed
 fi
 
 # Unset the password variable for security

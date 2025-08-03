@@ -236,15 +236,21 @@ async function seedFarmData() {
 
 async function seedGeneralChat() {
   console.log('Ensuring General Chat exists...');
-  await prisma.conversation.upsert({
+  const existingChat = await prisma.conversation.findFirst({
     where: { name: 'General Chat' },
-    update: {},
-    create: {
-      name: 'General Chat',
-      isGroup: true,
-    },
   });
-  console.log('General Chat exists.');
+
+  if (!existingChat) {
+    await prisma.conversation.create({
+      data: {
+        name: 'General Chat',
+        isGroup: true,
+      },
+    });
+    console.log('General Chat created.');
+  } else {
+    console.log('General Chat already exists.');
+  }
 }
 
 async function main() {

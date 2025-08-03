@@ -49,7 +49,7 @@ export async function POST(req) {
 
         const passwordHash = await bcrypt.hash(password, 10);
 
-        await prisma.user.create({
+        const newUser = await prisma.user.create({
             data: {
                 name,
                 email,
@@ -66,6 +66,23 @@ export async function POST(req) {
                 },
             },
         });
+
+        // Add user to General Chat
+        try {
+            const generalChat = await prisma.conversation.findUnique({
+                where: { name: 'General Chat' },
+            });
+            if (generalChat) {
+                await prisma.conversationParticipant.create({
+                    data: {
+                        conversationId: generalChat.id,
+                        userId: newUser.id,
+                    },
+                });
+            }
+        } catch (chatError) {
+            console.error("Failed to add user to General Chat:", chatError);
+        }
 
         return NextResponse.json({ message: 'Application submitted successfully.' }, { status: 201 });
 

@@ -51,6 +51,24 @@ export async function POST(req) {
 
     // Exclude password from response
     const { passwordHash: _, ...userWithoutPassword } = newUser;
+
+    // Add user to General Chat
+    try {
+        const generalChat = await prisma.conversation.findUnique({
+            where: { name: 'General Chat' },
+        });
+        if (generalChat) {
+            await prisma.conversationParticipant.create({
+                data: {
+                    conversationId: generalChat.id,
+                    userId: newUser.id,
+                },
+            });
+        }
+    } catch (chatError) {
+        console.error("Failed to add user to General Chat:", chatError);
+    }
+    
     return NextResponse.json(userWithoutPassword, { status: 201 });
 
   } catch (error) {

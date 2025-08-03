@@ -234,6 +234,19 @@ async function seedFarmData() {
 }
 
 
+async function seedGeneralChat() {
+  console.log('Ensuring General Chat exists...');
+  await prisma.conversation.upsert({
+    where: { name: 'General Chat' },
+    update: {},
+    create: {
+      name: 'General Chat',
+      isGroup: true,
+    },
+  });
+  console.log('General Chat exists.');
+}
+
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'adminpassword';
@@ -255,6 +268,7 @@ async function main() {
 
   await seedHealthTemplates();
   await seedFarmData();
+  await seedGeneralChat();
 }
 
 main()

@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${APP_PORT:-3007}:3000"
+      - "${APP_PORT:-3008}:3000"
       - "8080:8080"
     env_file:
      - .env

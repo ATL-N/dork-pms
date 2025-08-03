@@ -46,20 +46,8 @@ export async function DELETE(request, { params }) {
     }
 
     const { conversationId } = params;
-    const { userId } = await request.json();
 
     try {
-        if (user.userType === 'ADMIN' && userId) {
-            // Admin can unpin for a specific user
-            await prisma.pinnedConversation.deleteMany({
-                where: {
-                    userId: userId,
-                    conversationId,
-                },
-            });
-            return NextResponse.json({ message: `Conversation unpinned for user ${userId}` }, { status: 200 });
-        }
-
         // Regular user unpins for themselves
         await prisma.pinnedConversation.deleteMany({
             where: {

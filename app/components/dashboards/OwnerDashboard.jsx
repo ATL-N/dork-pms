@@ -7,9 +7,9 @@ import SummaryCard from './SummaryCard';
 import Alerts from './Alerts';
 import LoadingSpinner from '../LoadingSpinner';
 import AddFarmModal from '../modals/AddFarmModal';
-import InviteUserModal from '../modals/InviteUserModal';
+import AddStaffModal from '../modals/AddStaffModal'; // Changed from InviteUserModal
 import InviteVetModal from '../modals/InviteVetModal';
-import Modal from '../Modal'; // Import the main Modal component
+import Modal from '../Modal';
 import { useFarm } from '@/app/context/FarmContext';
 
 export default function OwnerDashboard() {
@@ -38,9 +38,9 @@ export default function OwnerDashboard() {
     fetchData();
   }, []);
 
-  const handleFarmAdded = () => {
+  const handleActionCompletion = () => {
     fetchData(); // Refetch dashboard data
-    refreshFarms(); // Refresh farm list in context
+    refreshFarms(); // Refresh farm list in context if applicable
   };
 
   const openModal = (type) => {
@@ -70,7 +70,7 @@ export default function OwnerDashboard() {
         </div>
         {showModal && modalType === 'addFarm' && (
             <Modal onClose={closeModal} hideDefaultButtons={true}>
-                <AddFarmModal isOpen={true} onClose={closeModal} onFarmAdded={handleFarmAdded} />
+                <AddFarmModal isOpen={true} onClose={closeModal} onFarmAdded={handleActionCompletion} />
             </Modal>
         )}
       </>
@@ -82,12 +82,11 @@ export default function OwnerDashboard() {
 
     switch(modalType) {
         case 'addFarm':
-            return <AddFarmModal isOpen={true} onClose={closeModal} onFarmAdded={handleFarmAdded} />;
-        case 'inviteUser':
-            if (!currentFarm) return <p>Please select a farm first.</p>;
-            return <InviteUserModal isOpen={true} onClose={closeModal} farmId={currentFarm.id} />;
+            return <AddFarmModal isOpen={true} onClose={closeModal} onFarmAdded={handleActionCompletion} />;
+        case 'addStaff':
+            return <AddStaffModal isOpen={true} onClose={closeModal} onStaffAdded={handleActionCompletion} />;
         case 'inviteVet':
-            if (!currentFarm) return <p>Please select a farm first.</p>;
+            if (!currentFarm) return <p>Please select a farm first to invite a vet.</p>;
             return <InviteVetModal isOpen={true} onClose={closeModal} farmId={currentFarm.id} />;
         default:
             return null;
@@ -101,7 +100,7 @@ export default function OwnerDashboard() {
           <h1 className="text-2xl font-bold">Owner's Dashboard</h1>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => openModal('addFarm')} className="btn-secondary flex items-center"><Plus size={16} className="mr-1" /> New Farm</button>
-            <button onClick={() => openModal('inviteUser')} className="btn-secondary flex items-center" disabled={!currentFarm}><UserPlus size={16} className="mr-1" /> Invite Staff</button>
+            <button onClick={() => openModal('addStaff')} className="btn-secondary flex items-center"><UserPlus size={16} className="mr-1" /> Add Staff</button>
             <button onClick={() => openModal('inviteVet')} className="btn-secondary flex items-center" disabled={!currentFarm}><Briefcase size={16} className="mr-1" /> Invite Vet</button>
           </div>
         </div>

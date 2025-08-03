@@ -12,11 +12,35 @@ export async function GET(request) {
     }
 
     try {
+        // Ensure the user is in the General Chat
+        let generalChat = await prisma.conversation.findFirst({
+            where: { name: 'General Chat' },
+        });
+
+        if (generalChat) {
+            const isParticipant = await prisma.conversationParticipant.findFirst({
+                where: {
+                    conversationId: generalChat.id,
+                    userId: user.id,
+                },
+            });
+
+            if (!isParticipant) {
+                await prisma.conversationParticipant.create({
+                    data: {
+                        conversationId: generalChat.id,
+                        userId: user.id,
+                    },
+                });
+            }
+        }
+
         const conversations = await prisma.conversation.findMany({
             where: {
                 participants: {
                     some: {
                         userId: user.id,
+                        isHidden: false,
                     },
                 },
             },

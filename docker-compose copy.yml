@@ -1,0 +1,109 @@
+# version: '3.8'
+services:
+  nextjs:
+    image: edincep-measure-nextjs:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-3007}:3000"
+    env_file:
+     - .env
+    environment:
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=https://${DOMAIN}
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST}
+      - PORT=3007
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.edincep-measure-http.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.edincep-measure-http.entrypoints=http
+      - traefik.http.routers.edincep-measure-http.middlewares=https-redirect
+      - traefik.http.routers.edincep-measure-https.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.edincep-measure-https.entrypoints=https
+      - traefik.http.routers.edincep-measure-https.tls=true
+      - traefik.http.routers.edincep-measure-https.tls.certresolver=le
+      - traefik.http.routers.edincep-measure-https.service=edincep-measure-service
+      - traefik.http.services.edincep-measure-service.loadbalancer.server.port=3007
+    depends_on:
+      edincepmeasurehost:
+        condition: service_healthy
+      prisma-migrate:
+        condition: service_completed_successfully
+    restart: always
+    networks:
+      - traefik-public
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3007/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prisma migration and seeding service
+  prisma-migrate:
+    image: edincep-measure-nextjs:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+     - .env
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST}
+    depends_on:
+      edincepmeasurehost:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Checking for existing migrations...' &&
+        if [ ! -d 'prisma/migrations' ] || [ -z \"$(ls -A prisma/migrations 2>/dev/null)\" ]; then
+          echo 'No migrations found. Creating initial migration...' &&
+          npx prisma migrate dev --name init --skip-seed;
+        else
+          echo 'Migrations found. Deploying...' &&
+          npx prisma migrate deploy;
+        fi &&
+        echo 'Generating Prisma client...' &&
+        npx prisma generate &&
+        echo 'Running seed...' &&
+        # npx prisma db seed &&
+        echo 'Database initialization completed!'
+      "
+    networks:
+      - traefik-public
+    restart: "no"
+
+  edincepmeasurehost:
+    image: postgres:15-alpine
+    ports:
+      - "5438:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-postgres}
+      - DB_HOST=${DB_HOST}
+    volumes:
+      - postgres-data-edincep-measure:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+      - ./backups:/app/backups
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - traefik-public
+    command:
+      - "postgres"
+      - "-c"
+      - "ssl=off"
+
+volumes:
+  postgres-data-edincep-measure:
+    driver: local
+
+networks:
+  traefik-public:
+    external: true

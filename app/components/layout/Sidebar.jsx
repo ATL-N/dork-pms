@@ -54,20 +54,33 @@ const navigationItems = [
   },
   {
     name: "Team",
+    path: "/staff",
     icon: Users,
     roles: ["OWNER", "MANAGER"],
-    children: [
-      { name: "Staff", path: "/staff" },
-      { name: "Chat", path: "/chat" },
-    ],
   },
   {
-    name: "Veterinarians",
+    name: "Chat",
+    path: "/chat",
+    icon: MessageCircle,
+    roles: ["OWNER", "MANAGER", "WORKER", "VET", "ADMIN"], // Now available to all
+  },
+  {
+    name: "Veterinary",
     path: "/veterinarians",
     icon: Heart,
-    roles: ["VET"],
+    roles: ["VET"], // This is the public listing, maybe all roles should see it? For now, VET only.
   },
-  { name: "Admin", path: "/admin", icon: ShieldCheck, roles: ["ADMIN"] },
+  {
+    name: "Admin",
+    icon: ShieldCheck,
+    roles: ["ADMIN"],
+    children: [
+        { name: "Overview", path: "/admin" },
+        { name: "Manage Users", path: "/admin/users" },
+        { name: "Manage Vets", path: "/admin/veterinarians" },
+        { name: "System Logs", path: "/admin/logs" },
+    ]
+  },
 ];
 
 // Function to filter navigation items based on user role

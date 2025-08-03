@@ -76,11 +76,17 @@ export default function SignIn() {
             </button>
           </div>
         </form>
-        <div className="text-sm text-center">
+        <div className="text-sm text-center space-y-2">
           <p>
             Want to create your own farm?{' '}
             <a href="/auth/signup" className="font-medium text-[color:var(--primary)] hover:text-[color:var(--primary-dark)]">
               Apply here
+            </a>
+          </p>
+          <p>
+            Are you a veterinarian?{' '}
+            <a href="/auth/vet-signup" className="font-medium text-[color:var(--primary)] hover:text-[color:var(--primary-dark)]">
+              Register here
             </a>
           </p>
         </div>

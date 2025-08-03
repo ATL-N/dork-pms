@@ -271,11 +271,20 @@ model UserProfile {
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum VetApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model VeterinarianProfile {
   userId          String  @id
   specialization  String?
   licenseNumber   String? @unique
-  isVerified      Boolean @default(false)
+  isVerified      Boolean @default(false) // This can mean "approved by admin"
+  approvalStatus  VetApprovalStatus @default(PENDING)
+  yearsExperience Int?
+  qualificationUrl String? // URL to the uploaded certificate/document
   averageRating   Float   @default(0)
   ratingCount     Int     @default(0)
 
@@ -322,6 +331,7 @@ model PinnedConversation {
 model ConversationParticipant {
   conversationId String
   userId         String
+  isHidden       Boolean  @default(false)
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -335,6 +345,7 @@ model Message {
   mediaUrl        String?
   mediaType       String?
   createdAt       DateTime @default(now())
+  deletedAt       DateTime?
   conversationId  String
   senderId        String
   isPinned        Boolean  @default(false)

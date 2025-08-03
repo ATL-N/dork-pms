@@ -1,7 +1,8 @@
 // socket-server.js
 const { WebSocketServer } = require('ws');
 
-const wss = new WebSocketServer({ port: 8080 });
+const port = process.env.WEBSOCKET_PORT || 8080;
+const wss = new WebSocketServer({ port });
 
 // A map to store clients per conversation
 const conversations = new Map();
@@ -56,4 +57,4 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log('WebSocket server started on port 8080');
+console.log(`WebSocket server started on port ${port}`);

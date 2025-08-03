@@ -159,7 +159,10 @@ const ChatPage = () => {
     useEffect(() => {
         if (!activeConversation) return;
 
-        ws.current = new WebSocket('ws://localhost:8080');
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const wsUrl = `${protocol}//${host}:8080`;
+        ws.current = new WebSocket(wsUrl);
 
         ws.current.onopen = () => {
             console.log('WebSocket connected');

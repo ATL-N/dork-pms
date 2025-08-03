@@ -160,8 +160,9 @@ const ChatPage = () => {
         if (!activeConversation) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const wsUrl = `${protocol}//${host}:8080`;
+        const host = window.location.host; // Use host to include port during development
+        const wsUrl = `${protocol}//${host}/api/socket`;
+        
         ws.current = new WebSocket(wsUrl);
 
         ws.current.onopen = () => {

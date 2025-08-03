@@ -1,4 +1,13 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/socket',
+        destination: 'http://localhost:8080', // Proxy to the WebSocket server
+      },
+    ];
+  },
+};
 
 export default nextConfig;

@@ -43,7 +43,7 @@ services:
   dorkpf-db:
     image: postgres:15-alpine
     ports:
-      - "5438:5432"
+      - "5439:5432"
     environment:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD}

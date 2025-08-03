@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from '@/app/lib/session';
-import { log } from '@/app/lib/logging';
+import { logAction as log } from "@/app/lib/logging";
 import { format } from 'date-fns';
 
 const prisma = new PrismaClient();

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from '@/app/lib/session';
 import { z } from 'zod';
-import { createLog } from '@/app/lib/logging';
+import { logAction as createLog } from "@/app/lib/logging";
 
 const prisma = new PrismaClient();
 

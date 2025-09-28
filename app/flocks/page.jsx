@@ -29,6 +29,7 @@ function FlocksPageContent() {
   const [showModal, setShowModal] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: null, data: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ageDisplayUnit, setAgeDisplayUnit] = useState('days'); // 'days' or 'weeks'
   const { addNotification } = useNotification();
 
   const { data: session } = useSession();
@@ -297,6 +298,20 @@ function FlocksPageContent() {
                 size={18}
               />
             </div>
+            <div className="flex items-center border border-[color:var(--border)] rounded-md">
+                <button 
+                    className={`px-3 py-1.5 text-sm font-medium rounded-l-md ${ageDisplayUnit === 'days' ? 'bg-[color:var(--primary)] text-white' : 'bg-transparent'}`}
+                    onClick={() => setAgeDisplayUnit('days')}
+                >
+                    Days
+                </button>
+                <button 
+                    className={`px-3 py-1.5 text-sm font-medium rounded-r-md ${ageDisplayUnit === 'weeks' ? 'bg-[color:var(--primary)] text-white' : 'bg-transparent'}`}
+                    onClick={() => setAgeDisplayUnit('weeks')}
+                >
+                    Weeks
+                </button>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -305,6 +320,7 @@ function FlocksPageContent() {
                     key={flock.id} 
                     flock={flock}
                     isExpanded={flock.id === expandedFlockId}
+                    ageDisplayUnit={ageDisplayUnit}
                     onToggleExpand={() => handleToggleExpand(flock.id)}
                     onEdit={() => canAddFlock && openModal('edit', flock)}
                     onArchive={() => canAddFlock && openModal('archive', flock)}

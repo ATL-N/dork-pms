@@ -17,15 +17,23 @@ export async function GET(request) {
   try {
     const farms = await prisma.farm.findMany({
       where: {
-        OR: [
-          { name: { contains: searchTerm, mode: 'insensitive' } },
-          { location: { contains: searchTerm, mode: 'insensitive' } },
-        ],
+        users: {
+            some: {
+                userId: user.id,
+            },
+        },
       },
-      select: { id: true, name: true, location: true },
-      take: 10, // Limit results
+      // Select all fields needed by the client
+      select: { 
+        id: true, 
+        name: true, 
+        location: true, 
+        ownerId: true, 
+        createdAt: true, 
+        updatedAt: true 
+      },
     });
-    await logAction('INFO', `User searched for farms with term: ${searchTerm}` , { userId: user.id });
+    await logAction('INFO', `User ${user.id} fetched their farms` , { userId: user.id });
     return new Response(JSON.stringify(farms), { status: 200 });
   } catch (error) {
     await logAction('ERROR', 'Failed to search farms', { userId: user.id, error: error.message });

@@ -16,7 +16,7 @@ const getLifecycleStage = (flock) => {
         if (ageInWeeks <= 6) return { stage: 'Brooding', color: 'bg-yellow-500' };
         if (ageInWeeks <= 17) return { stage: 'Pullet (Grower)', color: 'bg-blue-500' };
         if (ageInWeeks <= 21) return { stage: 'Point of Lay', color: 'bg-purple-500' };
-        if (flock.firstEggDate) {
+        if (flock.firstEggDate || (flock.eggProductionRecords && flock.eggProductionRecords.length > 0)) {
              if (ageInWeeks <= 40) return { stage: 'Started Laying', color: 'bg-green-600' };
              return { stage: 'Peak Production', color: 'bg-green-700' };
         }
@@ -37,6 +37,7 @@ const getLifecycleStage = (flock) => {
 export default function FlockCard({ 
     flock, 
     isExpanded,
+    ageDisplayUnit = 'days',
     onToggleExpand,
     onEdit, 
     onArchive, 
@@ -50,7 +51,16 @@ export default function FlockCard({
     const [details, setDetails] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const getFlockAge = (startDate) => differenceInDays(new Date(), new Date(startDate));
+    const getFlockAge = (startDate) => {
+        const ageInDays = differenceInDays(new Date(), new Date(startDate));
+        if (ageDisplayUnit === 'weeks') {
+            const weeks = Math.floor(ageInDays / 7);
+            const days = ageInDays % 7;
+            return `${weeks}w ${days}d`;
+        }
+        return `${ageInDays} days`;
+    };
+
     const lifecycle = getLifecycleStage(flock);
 
     useEffect(() => {
@@ -108,7 +118,7 @@ export default function FlockCard({
                                 <>
                                     <div>
                                         <span className="text-xs text-[color:var(--muted-foreground)]">Age: </span>
-                                        <span className="font-medium">{getFlockAge(flock.startDate)} days</span>
+                                        <span className="font-medium">{getFlockAge(flock.startDate)}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5" title={`Lifecycle Stage: ${lifecycle.stage}`}>
                                         <span className={`w-3 h-3 rounded-full ${lifecycle.color}`}></span>

@@ -15,7 +15,7 @@ const searchParamsSchema = z.object({
 });
 
 export async function GET(request) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
@@ -28,13 +28,18 @@ export async function GET(request) {
   }
   
   const { farmId, startDate, endDate, type, category } = validation.data;
+  const since = searchParams.get('since');
 
   try {
     const whereClause = {
       farmId,
     };
 
-    if (startDate && endDate) {
+    if (since) {
+      whereClause.updatedAt = {
+        gt: new Date(since),
+      };
+    } else if (startDate && endDate) {
       whereClause.date = {
         gte: new Date(startDate),
         lte: new Date(endDate),
@@ -62,7 +67,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

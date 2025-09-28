@@ -59,7 +59,11 @@ export async function GET(req, { params }) {
         growthRecords: { orderBy: { date: "desc" }, take: 5 },
         eggProductionRecords: { orderBy: { date: "desc" }, take: 5 },
         mortalityRecords: { orderBy: { date: "desc" }, take: 5 },
-        healthTasks: { orderBy: { completedDate: "desc" }, take: 5 },
+        healthTasks: { 
+          where: { status: 'COMPLETED' },
+          orderBy: { completedDate: "desc" }, 
+          take: 5 
+        },
         feedConsumption: {
           orderBy: { date: "desc" },
           take: 5,

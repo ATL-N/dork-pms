@@ -8,23 +8,32 @@ const prisma = new PrismaClient();
 // GET all inventory items for a farm
 export async function GET(request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const farmId = searchParams.get('farmId');
+    const since = searchParams.get('since');
 
     if (!farmId) {
       return NextResponse.json({ error: 'farmId is required' }, { status: 400 });
     }
 
+    const whereClause = {
+      farmId: farmId,
+      status: 'active',
+    };
+
+    if (since) {
+      whereClause.updatedAt = {
+        gt: new Date(since),
+      };
+    }
+
     const inventoryItems = await prisma.inventoryItem.findMany({
-      where: {
-        farmId: farmId,
-        status: 'active',
-      },
+      where: whereClause,
       orderBy: {
         name: 'asc',
       },
@@ -40,7 +49,7 @@ export async function GET(request) {
 // POST a new inventory item
 export async function POST(request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

@@ -1,10 +1,10 @@
 // app/components/flocks/FlockDetails.jsx
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { differenceInDays, format } from 'date-fns';
-import { Droplet, Egg, Activity, Shield, BarChart as BarChartIcon, ExternalLink, DollarSign } from 'lucide-react';
+import { differenceInDays, format, addDays } from 'date-fns';
+import { Droplet, Egg, Activity, Shield, BarChart as BarChartIcon, ExternalLink, DollarSign, Calendar } from 'lucide-react';
 
 // Helper to process and combine data for the chart
 const processFlockDataForChart = (flock) => {
@@ -44,6 +44,16 @@ const tooltipStyle = {
     border: '1px solid var(--border)',
 };
 
+const formatDateRange = (task) => {
+    const startDate = new Date(task.scheduledDate);
+    if (!task.durationInDays || task.durationInDays <= 1) {
+        return format(startDate, 'MMM dd');
+    }
+    const endDate = addDays(startDate, task.durationInDays - 1);
+    return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`;
+};
+
+
 export default function FlockDetails({ 
     flock, 
     onRecordFeed,
@@ -55,6 +65,39 @@ export default function FlockDetails({
 }) {
     
     const chartData = processFlockDataForChart(flock);
+    const [upcomingTasks, setUpcomingTasks] = useState([]);
+    const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
+
+    useEffect(() => {
+        const fetchSchedule = async () => {
+            if (!flock?.id) return;
+            setIsLoadingSchedule(true);
+            try {
+                const res = await fetch(`/api/farms/${flock.farmId}/health-tasks`);
+                if (!res.ok) throw new Error('Failed to fetch health schedule');
+                const allTasks = await res.json();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const relevantTasks = allTasks
+                    .filter(task => 
+                        task.flockId === flock.id && 
+                        task.status !== 'COMPLETED' &&
+                        new Date(task.scheduledDate) >= today
+                    )
+                    .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+                
+                setUpcomingTasks(relevantTasks);
+            } catch (error) {
+                console.error("Error fetching health schedule:", error);
+            } finally {
+                setIsLoadingSchedule(false);
+            }
+        };
+
+        fetchSchedule();
+    }, [flock?.id, flock?.farmId]);
+
 
     const actionButtons = [
         { label: "Record Feed", icon: Droplet, onClick: onRecordFeed, type: 'all' },
@@ -138,25 +181,66 @@ export default function FlockDetails({
                 )}
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                <div className="card p-4 flex flex-col">
+                    <h3 className="font-medium mb-3 flex items-center gap-2"><Calendar size={18} /> Upcoming Health Schedule</h3>
+                    <div className="overflow-y-auto flex-grow max-h-96">
+                        {isLoadingSchedule ? <p className="text-sm text-center text-[color:var(--muted-foreground)]">Loading schedule...</p> : upcomingTasks.length > 0 ? (
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-[color:var(--muted-foreground)] uppercase bg-[color:var(--muted)]">
+                                    <tr>
+                                        <th scope="col" className="px-4 py-3">Age (Day)</th>
+                                        <th scope="col" className="px-4 py-3">Date</th>
+                                        <th scope="col" className="px-4 py-3">Task</th>
+                                        <th scope="col" className="px-4 py-3">Method</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {upcomingTasks.map((task) => {
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        const startDate = new Date(task.scheduledDate);
+                                        startDate.setHours(0, 0, 0, 0);
+                                        const endDate = addDays(startDate, task.durationInDays || 1);
+                                        const isActive = today >= startDate && today < endDate;
+
+                                        return (
+                                            <tr key={task.id} className={`border-b border-[color:var(--border)] ${isActive ? 'bg-blue-500/20' : ''}`}>
+                                                <td className="px-4 py-3 font-medium">{differenceInDays(startDate, new Date(flock.startDate))}</td>
+                                                <td className="px-4 py-3 font-semibold text-xs">{formatDateRange(task)}</td>
+                                                <td className="px-4 py-3">{task.taskName}</td>
+                                                <td className="px-4 py-3 text-[color:var(--muted-foreground)]">{task.method}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        ) : <p className="text-sm text-center text-[color:var(--muted-foreground)] pt-4">No upcoming tasks on the schedule.</p>}
+                    </div>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card p-4">
-                    <h3 className="font-medium mb-3">Recent Health Events</h3>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {flock.healthTasks?.length > 0 ? flock.healthTasks.map((task, index) => (
+                    <h3 className="font-medium mb-3 flex items-center gap-2"><Activity size={18} /> Recent Activity</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {flock.healthTasks?.filter(t => t.status === 'COMPLETED').length > 0 ? flock.healthTasks.filter(t => t.status === 'COMPLETED').map((task, index) => (
                             <div key={index} className="text-sm flex justify-between items-center p-2 border-b border-[color:var(--border)]">
                                 <span>{task.taskName} ({task.taskType})</span>
                                 <span className="text-[color:var(--muted-foreground)]">{format(new Date(task.completedDate), 'yyyy-MM-dd')}</span>
                             </div>
-                        )) : <p className="text-sm text-[color:var(--muted-foreground)]">No health events recorded.</p>}
+                        )) : <p className="text-sm text-[color:var(--muted-foreground)]">No recent health events recorded.</p>}
+                         <div className="pt-2">
+                             <Link href={`/health?flockId=${flock.id}`} className="flex items-center justify-center text-sm p-2 rounded-md hover:bg-[color:var(--accent)] text-[color:var(--primary)] font-semibold">
+                                <span>View Full Health History</span>
+                                <ExternalLink size={16} className="ml-2" />
+                            </Link>
+                         </div>
                     </div>
                 </div>
-                <div className="card p-4">
+                 <div className="card p-4">
                      <h3 className="font-medium mb-3">Quick Links</h3>
                      <div className="space-y-2">
-                        <Link href={`/health?flockId=${flock.id}`} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-[color:var(--accent)]">
-                            <span>View Full Health History</span>
-                            <ExternalLink size={16} />
-                        </Link>
                         <Link href={`/production?flockId=${flock.id}`} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-[color:var(--accent)]">
                             <span>View Full Production Data</span>
                             <ExternalLink size={16} />

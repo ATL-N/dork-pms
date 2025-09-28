@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from '@/app/lib/session';
 import { logAction } from '@/app/lib/logging';
+import { completeTaskIfDue } from '@/app/lib/taskUtils';
 
 const prisma = new PrismaClient();
 
@@ -57,6 +58,9 @@ export async function POST(request, { params }) {
     }
 
     await logAction('INFO', `Recorded feed consumption of ${quantity} for flock ${flockId}`, { userId: user.id, farmId });
+
+    // Attempt to complete a related task
+    await completeTaskIfDue(flockId, 'Feed Flock', new Date());
 
     return NextResponse.json(newConsumption, { status: 201 });
   } catch (error) {

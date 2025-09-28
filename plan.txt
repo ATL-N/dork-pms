@@ -204,3 +204,77 @@ Of course. It's a great idea to review the full scope to ensure everything is co
 
   This comprehensive structure ensures every page has a distinct and valuable purpose, contributing to a powerful and
   intuitive application.
+
+
+
+
+
+As requested, here is the list of remaining tasks to complete Phase 3 of the development plan.
+
+  Remaining Tasks for Phase 3
+
+  1. Financial Management:
+   * Invoices Tab:
+       * Build the UI to display a list of invoices from the local database.
+       * Implement the logic to fetch and sync invoices from the backend API.
+   * Add/Edit Invoice Page:
+       * Complete the form with all necessary fields (e.g., invoiceNumber, date, dueDate, amount, customer).
+       * Implement the logic to save new invoices to the local database and queue them for background synchronization.
+   * Transactions Logic:
+       * Ensure the existing "Add Transaction" form correctly saves data offline and syncs properly.
+
+  2. Health Management:
+   * Health Page:
+       * Implement the UI to display a list of health tasks, ideally grouped by flock or sorted by date.
+       * Write the logic to fetch health tasks from the local database and sync with the backend.
+   * Log Health Task Page:
+       * Build out the form with all required fields (e.g., taskName, taskType, scheduledDate, medicationUsed).
+       * Implement the save logic to store the task locally and queue it for syncing.
+       * Add logic to automatically update the stock of a medication in the inventory when a health task is logged as
+         complete.
+
+  3. Staff Management (Online-Only):
+   * Staff Page:
+       * Build the UI to display a list of staff members for the farm.
+       * Implement the API call to fetch the staff list.
+   * Invite Staff Page:
+       * Complete the form with fields for the staff member's email and their assigned role.
+       * Implement the logic to call the backend API to send an invitation.
+       * Handle potential network errors gracefully since this is an online-only action.
+
+
+
+Here are the remaining actions to complete Phase 4 based on the project plan:
+
+  1. Finalize the Chat Feature
+
+   * Real-time Connection (WebSocket):
+       * Implement a WebSocket client to connect to the backend socket server (/api/socket).
+       * Integrate this client into the ChatDetailsPage to listen for new messages in real-time when the device is
+         online.
+       * Update the sendMessage logic to also send messages through the WebSocket when online, in addition to saving
+         them locally.
+   * Backend Synchronization:
+       * Implement the logic in the ChatRepository to fetch existing conversations and messages from the backend API
+         (/api/chat/...).
+       * Create a mechanism to periodically sync this data with the local Drift database.
+   * "General Chat" Logic:
+       * Implement the on-demand logic described in the plan. When the ConversationsPage loads, it should check with the
+         backend if the user is in the "General Chat" and create it locally if they are not.
+
+  2. Implement Push Notifications
+
+   * Firebase Integration:
+       * Ensure the Flutter app is correctly connected to a Firebase project for both Android and iOS.
+       * Initialize firebase_messaging within the app.
+   * Permission Handling:
+       * Add the logic to request notification permissions from the user upon app start or when they first visit the
+         chat.
+   * Token Management:
+       * Retrieve the FCM (Firebase Cloud Messaging) token for the device and send it to your backend to associate it
+         with the current user.
+   * Notification Handling:
+       * Foreground: Implement a listener to handle incoming notifications while the app is open and in use.
+       * Background & Terminated: Configure background message handlers to process notifications when the app is not in
+         the foreground. This is the key to triggering background data syncs as planned.
+

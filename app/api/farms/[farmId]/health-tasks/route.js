@@ -8,11 +8,11 @@ const prisma = new PrismaClient();
 
 // GET all health tasks for a specific farm
 export async function GET(request, { params }) {
-    const { farmId } = params;
-    const user = await getCurrentUser();
+    const { farmId } = await params;
+    const user = await getCurrentUser(request);
 
     if (!user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     try {
@@ -26,13 +26,24 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: 'You do not have access to this farm.' }, { status: 403 });
         }
 
-        const healthTasks = await prisma.healthTask.findMany({
-            where: {
-                flock: {
-                    farmId: farmId,
-                    status: 'active'
-                },
+        const { searchParams } = new URL(request.url);
+        const since = searchParams.get('since');
+
+        const whereClause = {
+            flock: {
+                farmId: farmId,
+                status: 'active'
             },
+        };
+
+        if (since) {
+            whereClause.updatedAt = {
+                gt: new Date(since),
+            };
+        }
+
+        const healthTasks = await prisma.healthTask.findMany({
+            where: whereClause,
             include: {
                 flock: {
                     select: {
@@ -79,11 +90,11 @@ export async function GET(request, { params }) {
 
 // POST a new ad-hoc health task
 export async function POST(request, { params }) {
-    const { farmId } = params;
-    const user = await getCurrentUser();
+    const { farmId } = await params;
+    const user = await getCurrentUser(request);
 
     if (!user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     try {

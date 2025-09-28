@@ -1,3 +1,153 @@
+# Dork PMS - Offline-First Flutter Application Plan
+
+This document outlines a phased plan for developing an offline-first Flutter application for the Dork Poultry Management System. The app will leverage the existing backend API and provide a seamless user experience, even with intermittent or no network connectivity.
+
+## 1. Core Architecture & Technology Stack
+
+The application will be built with an offline-first architecture at its core.
+
+-   **State Management:** `flutter_riverpod` for a robust and scalable state management solution.
+-   **Local Database:** `Drift` (based on `sqflite`) will be used for local data persistence. It's a powerful reactive persistence library for Flutter and Dart, allowing us to write type-safe SQL queries. The Prisma schema will be translated into Drift table definitions.
+-   **API Communication:** `Dio` for handling network requests to the existing backend. It provides a powerful and easy-to-use API for making HTTP requests, with support for interceptors, which will be crucial for handling authentication tokens.
+-   **Authentication:** User session tokens will be securely stored using `flutter_secure_storage`.
+-   **Synchronization Strategy (Repository Pattern):**
+    1.  A **Repository layer** will abstract the data sources. When a page requests data, it will ask the repository.
+    2.  The repository will first attempt to serve data from the local **Drift database**. This makes the UI load instantly.
+    3.  The repository will then (or in the background) fetch fresh data from the **API**.
+    4.  Upon receiving API data, it will update the local database. Drift's reactive streams will automatically update the UI.
+    5.  **For mutations (Create, Update, Delete):**
+        -   The action is immediately applied to the local database for a snappy UI response.
+        -   The action is added to a **sync queue** (a dedicated table in the Drift database).
+        -   A background service will process this queue, sending the changes to the backend API. On success, the item is removed from the queue. On failure, it's retried later.
+-   **Push Notifications:** `firebase_messaging` will be used to receive push notifications from the backend, which can trigger background data syncs.
+
+---
+
+## 2. Phased Development Plan
+
+### Phase 1: Foundation, Authentication & UI Shell
+
+**Goal:** Set up the project, establish the core architecture, and implement user authentication.
+
+**Pages & Features:**
+
+1.  **Project Setup:**
+    -   Initialize Flutter project.
+    -   Add dependencies: `flutter_riverpod`, `drift`, `dio`, `flutter_secure_storage`, `firebase_messaging`, `go_router`.
+2.  **Theme Implementation:**
+    -   Create a `theme.dart` file.
+    -   Translate the colors from `globals.css` (see Appendix B) into a Flutter `ThemeData` object.
+3.  **API Client:**
+    -   Set up a singleton `Dio` client.
+    -   Implement an interceptor to automatically add the `Authorization: Bearer <token>` header to requests.
+4.  **Local Database Setup (Drift):**
+    -   Define initial table structures based on the Prisma schema (User, Farm).
+    -   Set up the Drift database instance.
+5.  **Splash Screen:**
+    -   Checks for a stored auth token.
+    -   Navigates to the Dashboard if a token is valid, otherwise to the Login page.
+6.  **Login Page:**
+    -   Email and password fields.
+    -   "Login" button calls the `/api/auth/signin` endpoint.
+    -   On success, securely stores the auth token and navigates to the Dashboard.
+    -   Displays errors from the API.
+7.  **Sign Up Page (for Owners/Vets):**
+    -   Tabbed view for "Farm Owner" and "Veterinarian".
+    -   Implements forms for `/api/auth/register-owner` and `/api/auth/vet-signup`.
+8.  **App Shell / Main Navigation:**
+        -   A persistent bottom navigation bar with a maximum of four primary tabs (Dashboard, Production, Inventory, Chat).
+        -   Other features like Finances, Health, and Staff management will be accessible from the Dashboard. See Appendix C for the updated structure.
+        -   A simple placeholder `AppBar`.
+        -   Handles basic navigation between the main pages.
+
+---
+
+### Phase 2: Dashboard & Core Farm Features (Offline-First)
+
+**Goal:** Implement the main dashboard and the core features for farm management, ensuring all functionality works offline.
+
+**Pages & Features:**
+
+1.  **Dashboard Page:**
+    -   Displays a summary of farm data (e.g., total flocks, egg production today).
+    -   Fetches data from the local database first, then updates from the `/api/dashboard/{userType}` endpoint.
+2.  **Farm & Flock Management:**
+    -   **Flocks List Page:** Displays a list of all flocks for the selected farm. Data is read from the local `flocks` table.
+    -   **Flock Details Page:** Shows details for a specific flock.
+    -   **Add/Edit Flock Form:** Allows creating and updating flocks. On save, writes to the local DB and adds the action to the sync queue.
+3.  **Inventory Management:**
+    -   **Inventory List Page:** Shows feed, medication, etc.
+    -   **Add/Edit Inventory Item Form:** Offline-first CRUD operations for inventory.
+4.  **Production Records:**
+    -   **Egg Collection Form:** A simple form to log daily egg collection. Works completely offline and syncs in the background.
+    -   **Mortality Records Form:** Similar offline-first form for logging mortalities.
+
+---
+
+### Phase 3: Financials, Health & Staff Management
+
+**Goal:** Expand the app to include financial tracking, health scheduling, and staff management.
+
+**Pages & Features:**
+
+1.  **Financial Management Page:**
+    -   Tabs for "Transactions" and "Invoices".
+    -   Lists financial records from the local database.
+    -   Forms for adding new expenses or revenues, with offline support.
+2.  **Health Management:**
+    -   **Health Schedule Page:** Displays upcoming health tasks (vaccinations, etc.) for each flock based on `HealthScheduleTemplate`.
+    -   **Log Health Task Form:** Allows users to mark tasks as complete and record medication usage. This will update inventory levels locally before syncing.
+3.  **Staff Management Page (for Owners):**
+    -   View a list of staff for a farm.
+    -   **Invite Staff Form:** Calls the `/api/staff` endpoint to invite new users. This is an online-only action but the UI should handle it gracefully.
+
+---
+
+### Phase 4: Real-time Communication & Notifications
+
+**Goal:** Implement the chat feature and push notifications.
+
+**Pages & Features:**
+
+1.  **Chat Conversations Page:**
+    -   Lists all user conversations, including the "General Chat".
+    -   Uses the on-demand logic from `/api/chat/conversations` to ensure the user is in the General Chat.
+    -   Stores conversations and messages locally for offline access.
+2.  **Chat Details Page:**
+    -   Displays messages for a selected conversation.
+    -   When online, connects to the WebSocket (`/api/socket`) for real-time messages.
+    -   When offline, allows the user to view historical messages and send new ones (which are added to the sync queue).
+3.  **Push Notifications Setup:**
+    -   Integrate `firebase_messaging`.
+    -   Request user permission for notifications.
+    -   Listen for incoming notifications and display them.
+    -   Implement background message handlers to trigger data syncs when a relevant notification arrives.
+
+---
+
+### Phase 5: Role-Specific Features (Admin & Vet)
+
+**Goal:** Build out the UI and functionality for Admin and Veterinarian user types.
+
+**Pages & Features:**
+
+1.  **Admin Dashboard:**
+    -   A separate view for admins.
+    -   **Owner Requests Page:** Lists pending farm owner applications for approval/rejection.
+    -   **Vet Verification Page:** Lists veterinarians pending verification.
+2.  **Veterinarian Dashboard:**
+    -   Lists farms the vet has been granted access to.
+    -   Allows viewing of flock health records for those farms (read-only).
+
+---
+
+## Appendix
+
+### A. Prisma Schema Data Model
+
+This is the source of truth for the application's data structure. These models should be translated into Drift table definitions.
+
+```prisma
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -42,8 +192,8 @@ enum InvoiceStatus {
 
 enum TaskStatus {
   PENDING
+  IN_PROGRESS
   COMPLETED
-  SKIPPED
 }
 
 enum UserType {
@@ -118,8 +268,6 @@ model Farm {
   veterinarians VetFarmAccess[]
   vetAccessRequests VetAccessRequest[]
   invitations Invitation[]
-  customTaskSchedules CustomTaskSchedule[]
-  useCustomSchedule Boolean @default(false)
 
   @@index([name])
 }
@@ -159,21 +307,6 @@ model User {
   logs          Log[]
   recordedBirdResales BirdResale[]
   recordedEggSales EggSale[]
-}
-
-model CustomTaskSchedule {
-  id        String   @id @default(cuid())
-  farmId    String
-  taskName  String
-  taskType  String // e.g., "Feeding", "Egg Collection"
-  times     String[] // e.g., ["06:00", "18:00"]
-  applyToAllFarms Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-
-  @@unique([farmId, taskName])
 }
 
 model Account {
@@ -391,14 +524,13 @@ model ReadReceipt {
 // FARM-SPECIFIC MODELS
 
 model HealthScheduleTemplate {
-  id             String    @id @default(cuid())
-  birdType       FlockType
-  day            Int
-  durationInDays Int       @default(1)
-  taskName       String
-  taskType       String // e.g., "Vaccination", "Medication", "Checkup"
-  method         String // e.g., "Drinking Water", "Injection"
-  notes          String?
+  id        String    @id @default(cuid())
+  birdType  FlockType
+  day       Int
+  taskName  String
+  taskType  String // e.g., "Vaccination", "Medication", "Checkup"
+  method    String // e.g., "Drinking Water", "Injection"
+  notes     String?
 
   @@unique([birdType, day, taskName])
 }
@@ -416,8 +548,6 @@ model Flock {
   costPerBird     Float?     // Cost per bird at the time of acquisition
   firstEggDate    DateTime?
   farmId          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
 
   farm     Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   
@@ -427,7 +557,6 @@ model Flock {
   feedConsumption FeedConsumption[]
   birdResales     BirdResale[]
   healthTasks     HealthTask[]
-  tasks           Task[]
 
   @@index([farmId])
 }
@@ -439,7 +568,6 @@ model HealthTask {
   taskType        String   // "Vaccination", "Medication", etc.
   method          String   // "Drinking Water", "Injection"
   scheduledDate   DateTime
-  durationInDays  Int      @default(1)
   completedDate   DateTime?
   status          ScheduleStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, MISSED
   notes           String?
@@ -560,8 +688,6 @@ model InventoryItem {
   supplier      String?
   status        String   @default("active") // e.g., active, archived
   farmId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
 
   farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   healthTasks   HealthTask[]
@@ -579,61 +705,37 @@ model Transaction {
   vendor      String?
   customer    String?
   farmId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
   
   farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   eggSale     EggSale?
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
+  id        String       @id @default(cuid())
   invoiceNumber String
-  date          DateTime
-  dueDate       DateTime?
-  type          InvoiceType
-  status        InvoiceStatus
-  amount        Float
-  customer      String?
-  vendor        String?
-  farmId        String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
+  date      DateTime
+  dueDate   DateTime?
+  type      InvoiceType
+  status    InvoiceStatus
+  amount    Float
+  customer    String?
+  vendor      String?
+  farmId    String
 
-  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm      Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
 }
 
 model Task {
-  id            String      @id @default(cuid())
+  id            String     @id @default(cuid())
   title         String
-  description   String?
-  dueDate       DateTime
-  status        TaskStatus  @default(PENDING)
+  assignedDate  DateTime
+  dueDate       DateTime?
+  status        TaskStatus @default(PENDING)
+  assignedToId  String
   farmId        String
-  flockId       String
-  assignedToId  String?
 
-  farm          Farm        @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  flock         Flock       @relation(fields: [flockId], references: [id], onDelete: Cascade)
-  assignedTo    User?       @relation(fields: [assignedToId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  @@index([farmId, flockId, dueDate])
-}
-
-model TaskTemplate {
-  id              String    @id @default(cuid())
-  birdType        FlockType
-  ageStartDays    Int
-  ageEndDays      Int
-  taskName        String
-  taskDescription String?
-  timesPerDay     Int       @default(1)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@unique([birdType, ageStartDays, ageEndDays, taskName])
+  assignedTo    User       @relation(fields: [assignedToId], references: [id])
+  farm          Farm       @relation(fields: [farmId], references: [id], onDelete: Cascade)
 }
 
 model Log {
@@ -675,3 +777,102 @@ model EggSale {
   recordedBy   User     @relation(fields: [recordedById], references: [id])
   transaction  Transaction? @relation(fields: [transactionId], references: [id])
 }
+```
+
+### B. Color Theme
+
+Extracted from `app/globals.css`. This should be used to create a `ColorScheme` in Flutter.
+
+```dart
+// lib/theme.dart
+import 'package:flutter/material.dart';
+
+const lightColorScheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: Color(0xFF10B981),
+  onPrimary: Color(0xFFFFFFFF),
+  secondary: Color(0xFFF59E0B),
+  onSecondary: Color(0xFFFFFFFF),
+  error: Color(0xFFEF4444),
+  onError: Color(0xFFF9FAFB),
+  background: Color(0xFFFFFFFF),
+  onBackground: Color(0xFF1F2937),
+  surface: Color(0xFFF9FAFB),
+  onSurface: Color(0xFF1F2937),
+  // Mapped from custom variables
+  outline: Color(0xFFE5E7EB), // --border
+  primaryContainer: Color(0xFFEFF6FF), // --accent
+  onPrimaryContainer: Color(0xFF1E40AF), // --accent-foreground
+);
+
+const darkColorScheme = ColorScheme(
+  brightness: Brightness.dark,
+  primary: Color(0xFF10B981),
+  onPrimary: Color(0xFFFFFFFF),
+  secondary: Color(0xFFF59E0B),
+  onSecondary: Color(0xFFFFFFFF),
+  error: Color(0xFFEF4444),
+  onError: Color(0xFFF9FAFB),
+  background: Color(0xFF1F2937),
+  onBackground: Color(0xFFF9FAFB),
+  surface: Color(0xFF374151),
+  onSurface: Color(0xFFF9FAFB),
+  // Mapped from custom variables
+  outline: Color(0xFF4B5563), // --border
+  primaryContainer: Color(0xFF1E40AF), // --accent
+  onPrimaryContainer: Color(0xFFEFF6FF), // --accent-foreground
+);
+```
+
+### C. Navigation Structure & User Roles
+
+Based on `app/lib/navItems.js` and the general project structure, the navigation has been simplified to a primary 4-tab bottom navigation bar for a cleaner user experience. Secondary features are accessed through the Dashboard.
+
+-   **Primary Bottom Navigation:**
+    -   **Dashboard:** The central hub of the application. Provides summaries and navigation to secondary features.
+    -   **Production:** For high-frequency tasks like logging egg collection and mortalities.
+    -   **Inventory:** Quick access to manage feed, medication, and other supplies.
+    -   **Chat:** For real-time communication.
+
+-   **Features Accessible from the Dashboard:**
+    -   **Financial Management:** Accessed via a summary card on the dashboard.
+    -   **Health Management:** Accessed via a card showing upcoming health tasks.
+    -   **Staff Management (Owner/Admin Only):** Accessed via a staff summary card.
+    -   **Reports & Analytics:** Accessed via summary charts or a dedicated "View Reports" link.
+
+-   **Role-Specific Dashboards:**
+    -   The content and accessible features on the Dashboard will be tailored to the user's role (Farmer, Admin, Vet).
+    -   **Admin Only:** Will see cards for User Verification, etc.
+    -   **Vet Only:** Will see a list of assigned farms.
+
+### D. Key API Endpoints to Consume
+
+-   **Auth:**
+    -   `POST /api/auth/signin`
+    -   `POST /api/auth/register-owner`
+    -   `POST /api/auth/vet-signup`
+-   **Dashboard:**
+    -   `GET /api/dashboard/{userType}`
+-   **Farms & Flocks:**
+    -   `GET /api/farms`
+    -   `POST /api/farms`
+    -   `GET /api/flocks?farmId={id}`
+    -   `POST /api/flocks`
+-   **Inventory:**
+    -   `GET /api/inventory?farmId={id}`
+    -   `POST /api/inventory`
+-   **Financials:**
+    -   `GET /api/finances/transactions?farmId={id}`
+    -   `POST /api/finances/transactions`
+    -   `GET /api/finances/invoices?farmId={id}`
+-   **Chat:**
+    -   `GET /api/chat/conversations`
+    -   `POST /api/chat/conversations`
+    -   `GET /api/chat/conversations/{id}/messages`
+    -   `POST /api/chat/messages`
+    -   WebSocket: `wss://your-domain.com/api/socket`
+-   **Admin:**
+    -   `GET /api/admin/owner-requests`
+    -   `POST /api/admin/owner-requests/{id}/approve`
+    -   `GET /api/admin/veterinarians`
+    -   `POST /api/admin/veterinarians/{id}/verify`

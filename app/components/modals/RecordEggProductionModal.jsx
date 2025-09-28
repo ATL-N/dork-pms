@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Egg } from 'lucide-react';
 
 export default function RecordEggProductionModal({ flock, onSave, onClose, isSubmitting }) {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [totalEggs, setTotalEggs] = useState('');
     const [brokenEggs, setBrokenEggs] = useState('');
     const [averageWeight, setAverageWeight] = useState('');
@@ -13,7 +12,6 @@ export default function RecordEggProductionModal({ flock, onSave, onClose, isSub
         e.preventDefault();
         onSave({
             flockId: flock.id,
-            // date,
             totalEggs: parseInt(totalEggs, 10),
             brokenEggs: parseInt(brokenEggs, 10) || 0,
             averageWeight: parseFloat(averageWeight) || null,
@@ -24,18 +22,6 @@ export default function RecordEggProductionModal({ flock, onSave, onClose, isSub
         <form onSubmit={handleSubmit} className="space-y-4">
             <h2 className="text-xl font-bold">Record Egg Production for {flock.name}</h2>
             
-            <div>
-                <label htmlFor="date" className="block text-sm font-medium">Date</label>
-                <input
-                    id="date"
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="input w-full"
-                    required
-                />
-            </div>
-
             <div>
                 <label htmlFor="totalEggs" className="block text-sm font-medium">Total Eggs Collected</label>
                 <input

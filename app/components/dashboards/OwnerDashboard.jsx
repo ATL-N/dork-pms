@@ -7,10 +7,11 @@ import SummaryCard from './SummaryCard';
 import Alerts from './Alerts';
 import LoadingSpinner from '../LoadingSpinner';
 import AddFarmModal from '../modals/AddFarmModal';
-import AddStaffModal from '../modals/AddStaffModal'; // Changed from InviteUserModal
+import AddStaffModal from '../modals/AddStaffModal';
 import InviteVetModal from '../modals/InviteVetModal';
 import Modal from '../Modal';
 import { useFarm } from '@/app/context/FarmContext';
+import TaskManager from './TaskManager';
 
 export default function OwnerDashboard() {
   const [data, setData] = useState(null);
@@ -135,6 +136,9 @@ export default function OwnerDashboard() {
             </div>
           </div>
         </div>
+
+        <TaskManager fetchAllFarms={true} />
+
       </div>
 
       {showModal && (

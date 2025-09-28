@@ -9,12 +9,11 @@ const prisma = new PrismaClient();
 // GET farm data
 export async function GET(request, { params }) {
   const session = await getCurrentUser(request);
-  console.log('sesssssoioinnnnnnnnnnnnnnnnnnnnnnnnnnn', session)
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { farmId } = await params;
+  const { farmId } = params;
   const userId = session.id;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -43,7 +42,7 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT to update farm data (including approvals)
+// PUT to update farm data (including approvals and custom schedules)
 export async function PUT(request, { params }) {
   const session = await getCurrentUser(request);
   if (!session) {
@@ -65,18 +64,23 @@ export async function PUT(request, { params }) {
   }
 
   try {
-    const { name, location, ownerApprovalStatus } = body;
+    const { name, location, ownerApprovalStatus, useCustomSchedule } = body;
+    
+    const dataToUpdate = {};
+    if (name) dataToUpdate.name = name;
+    if (location) dataToUpdate.location = location;
+    if (typeof useCustomSchedule === 'boolean') dataToUpdate.useCustomSchedule = useCustomSchedule;
+    if (ownerApprovalStatus) {
+        dataToUpdate.owner = {
+            update: {
+                ownerApprovalStatus,
+            },
+        };
+    }
+
     const updatedFarm = await prisma.farm.update({
       where: { id: farmId },
-      data: {
-        name,
-        location,
-        owner: {
-          update: {
-            ownerApprovalStatus,
-          },
-        },
-      },
+      data: dataToUpdate,
     });
 
     await logAction('INFO', `Farm ${farmId} updated by user ${userId}`, { userId, farmId, changes: body });

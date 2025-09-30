@@ -6,13 +6,14 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
   console.log("Middleware running for:", pathname);
 
+  // Let authentication API routes pass through
   if (pathname.startsWith('/api/auth')) {
     return NextResponse.next();
   }
 
+  // API Route Protection
   if (pathname.startsWith('/api')) {
     const authHeader = req.headers.get('authorization');
-    const sessionToken = req.cookies.get("next-auth.session-token") || req.cookies.get("__Secure-next-auth.session-token");
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
@@ -20,8 +21,7 @@ export async function middleware(req) {
 
       try {
         const { payload } = await jose.jwtVerify(token, secret);
-        
-        // Add user info to the request headers
+        // If token is valid, enrich headers and allow the request
         const requestHeaders = new Headers(req.headers);
         requestHeaders.set('x-user-id', payload.id);
         requestHeaders.set('x-user-email', payload.email);
@@ -33,23 +33,22 @@ export async function middleware(req) {
           },
         });
       } catch (error) {
-        console.error("API route - Invalid token:", error.message);
+        // Token is invalid
         return NextResponse.json({ message: 'Authentication required: Invalid token' }, { status: 401 });
       }
     }
 
+    // If no Bearer token, check for a web session cookie
+    const sessionToken = req.cookies.get("next-auth.session-token") || req.cookies.get("__Secure-next-auth.session-token");
     if (sessionToken) {
-      // This part is for web sessions. For simplicity in this context, we assume it works.
-      // A more robust solution would decode the session token here as well.
-      console.log("API route - Valid web session found.");
       return NextResponse.next();
     }
 
-    console.log("API route - No valid token or session found.");
+    // If neither a valid Bearer token nor a session cookie is found, reject the request
     return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
   }
 
-  // --- Existing Web Page Protection Logic ---
+  // Web Page Protection (for non-API routes)
   const publicPaths = ["/auth/signin", "/auth/signup", "/veterinarians", '/auth/vet-signup', '/'];
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || (path !== "/" && pathname.startsWith(path))
@@ -61,13 +60,13 @@ export async function middleware(req) {
 
   const sessionToken = req.cookies.get("next-auth.session-token") || req.cookies.get("__Secure-next-auth.session-token");
 
-  if (sessionToken) {
-    return NextResponse.next();
+  if (!sessionToken) {
+    const loginUrl = new URL("/auth/signin", req.url);
+    loginUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const loginUrl = new URL("/auth/signin", req.url);
-  loginUrl.searchParams.set("callbackUrl", req.nextUrl.href);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {

@@ -84,6 +84,7 @@ enum InvitationStatus {
 
 enum ScheduleStatus {
   SCHEDULED
+  IN_PROGRESS
   COMPLETED
   MISSED
 }
@@ -451,6 +452,7 @@ model HealthTask {
 
   flock           Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  dailyRecords    DailyTaskRecord[]
 
   @@index([flockId, scheduledDate])
 }
@@ -565,6 +567,7 @@ model InventoryItem {
 
   farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   healthTasks   HealthTask[]
+  dailyTaskRecords DailyTaskRecord[]
 
   @@index([farmId])
 }
@@ -674,4 +677,23 @@ model EggSale {
   farm         Farm     @relation(fields: [farmId], references: [id])
   recordedBy   User     @relation(fields: [recordedById], references: [id])
   transaction  Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model DailyTaskRecord {
+  id              String    @id @default(cuid())
+  date            DateTime  // The specific day this record is for
+  status          String    // PENDING, COMPLETED
+  notes           String?
+  quantityUsed    Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  healthTaskId    String
+  healthTask      HealthTask @relation(fields: [healthTaskId], references: [id], onDelete: Cascade)
+
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([healthTaskId])
+  @@unique([healthTaskId, date])
 }

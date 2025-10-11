@@ -75,7 +75,6 @@ The application will be built with an offline-first architecture at its core.
     -   **Flocks List Page:** Displays a list of all flocks for the selected farm. Data is read from the local `flocks` table.
     -   **Flock Details Page:** Shows details for a specific flock.
     -   **Add/Edit Flock Form:** Allows creating and updating flocks. On save, writes to the local DB and adds the action to the sync queue.
-3.  **Inventory Management:**
     -   **Inventory List Page:** Shows feed, medication, etc.
     -   **Add/Edit Inventory Item Form:** Offline-first CRUD operations for inventory.
 4.  **Production Records:**
@@ -192,8 +191,8 @@ enum InvoiceStatus {
 
 enum TaskStatus {
   PENDING
-  IN_PROGRESS
   COMPLETED
+  SKIPPED
 }
 
 enum UserType {
@@ -268,6 +267,8 @@ model Farm {
   veterinarians VetFarmAccess[]
   vetAccessRequests VetAccessRequest[]
   invitations Invitation[]
+  customTaskSchedules CustomTaskSchedule[]
+  useCustomSchedule Boolean @default(false)
 
   @@index([name])
 }
@@ -307,6 +308,21 @@ model User {
   logs          Log[]
   recordedBirdResales BirdResale[]
   recordedEggSales EggSale[]
+}
+
+model CustomTaskSchedule {
+  id        String   @id @default(cuid())
+  farmId    String
+  taskName  String
+  taskType  String // e.g., "Feeding", "Egg Collection"
+  times     String[] // e.g., ["06:00", "18:00"]
+  applyToAllFarms Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@unique([farmId, taskName])
 }
 
 model Account {
@@ -524,13 +540,14 @@ model ReadReceipt {
 // FARM-SPECIFIC MODELS
 
 model HealthScheduleTemplate {
-  id        String    @id @default(cuid())
-  birdType  FlockType
-  day       Int
-  taskName  String
-  taskType  String // e.g., "Vaccination", "Medication", "Checkup"
-  method    String // e.g., "Drinking Water", "Injection"
-  notes     String?
+  id             String    @id @default(cuid())
+  birdType       FlockType
+  day            Int
+  durationInDays Int       @default(1)
+  taskName       String
+  taskType       String // e.g., "Vaccination", "Medication", "Checkup"
+  method         String // e.g., "Drinking Water", "Injection"
+  notes          String?
 
   @@unique([birdType, day, taskName])
 }
@@ -548,6 +565,8 @@ model Flock {
   costPerBird     Float?     // Cost per bird at the time of acquisition
   firstEggDate    DateTime?
   farmId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   farm     Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   
@@ -557,6 +576,7 @@ model Flock {
   feedConsumption FeedConsumption[]
   birdResales     BirdResale[]
   healthTasks     HealthTask[]
+  tasks           Task[]
 
   @@index([farmId])
 }
@@ -568,6 +588,7 @@ model HealthTask {
   taskType        String   // "Vaccination", "Medication", etc.
   method          String   // "Drinking Water", "Injection"
   scheduledDate   DateTime
+  durationInDays  Int      @default(1)
   completedDate   DateTime?
   status          ScheduleStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, MISSED
   notes           String?
@@ -688,6 +709,8 @@ model InventoryItem {
   supplier      String?
   status        String   @default("active") // e.g., active, archived
   farmId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   healthTasks   HealthTask[]
@@ -705,37 +728,61 @@ model Transaction {
   vendor      String?
   customer    String?
   farmId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
   
   farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   eggSale     EggSale?
 }
 
 model Invoice {
-  id        String       @id @default(cuid())
+  id            String        @id @default(cuid())
   invoiceNumber String
-  date      DateTime
-  dueDate   DateTime?
-  type      InvoiceType
-  status    InvoiceStatus
-  amount    Float
-  customer    String?
-  vendor      String?
-  farmId    String
+  date          DateTime
+  dueDate       DateTime?
+  type          InvoiceType
+  status        InvoiceStatus
+  amount        Float
+  customer      String?
+  vendor        String?
+  farmId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
 
-  farm      Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
 }
 
 model Task {
-  id            String     @id @default(cuid())
+  id            String      @id @default(cuid())
   title         String
-  assignedDate  DateTime
-  dueDate       DateTime?
-  status        TaskStatus @default(PENDING)
-  assignedToId  String
+  description   String?
+  dueDate       DateTime
+  status        TaskStatus  @default(PENDING)
   farmId        String
+  flockId       String
+  assignedToId  String?
 
-  assignedTo    User       @relation(fields: [assignedToId], references: [id])
-  farm          Farm       @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm          Farm        @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  flock         Flock       @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  assignedTo    User?       @relation(fields: [assignedToId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([farmId, flockId, dueDate])
+}
+
+model TaskTemplate {
+  id              String    @id @default(cuid())
+  birdType        FlockType
+  ageStartDays    Int
+  ageEndDays      Int
+  taskName        String
+  taskDescription String?
+  timesPerDay     Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([birdType, ageStartDays, ageEndDays, taskName])
 }
 
 model Log {

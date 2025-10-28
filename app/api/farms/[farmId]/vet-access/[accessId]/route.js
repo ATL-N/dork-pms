@@ -20,7 +20,7 @@ export async function DELETE(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId, accessId } = params;
+  const { farmId, accessId } = await params;
   const farmUser = await getUserFarmRole(user.id, farmId);
 
   if (!farmUser || !['OWNER', 'MANAGER'].includes(farmUser.role)) {

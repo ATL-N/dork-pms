@@ -7,12 +7,12 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId, scheduleId } = params;
+  const { farmId, scheduleId } = await params;
   const data = await request.json();
   const { applyToAllFarms, ...scheduleData } = data;
 
@@ -53,12 +53,12 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId, scheduleId } = params;
+  const { farmId, scheduleId } = await params;
 
   try {
     const scheduleToDelete = await prisma.customTaskSchedule.findUnique({

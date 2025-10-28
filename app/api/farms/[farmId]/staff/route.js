@@ -6,12 +6,12 @@ import { getCurrentUser } from '@/app/lib/session';
 const prisma = new PrismaClient();
 
 export async function GET(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
 
   try {
     // Ensure the user is an owner or manager of this farm to view staff

@@ -37,7 +37,7 @@ export async function GET(req, context) {
       params: await context.params,
     });
 
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response("Unauthorized", { status: 401 });

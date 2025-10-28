@@ -1,11 +1,48 @@
 // socket-server.js
 const { WebSocketServer } = require('ws');
+const http = require('http');
 
 const port = process.env.WEBSOCKET_PORT || 8080;
-const wss = new WebSocketServer({ port });
+
+// Create an HTTP server
+const server = http.createServer((req, res) => {
+  // Handle internal broadcast requests
+  if (req.url === '/broadcast' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const { conversationId, message } = JSON.parse(body);
+        broadcast(conversationId, message);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Broadcast successful' }));
+      } catch (error) {
+        console.error('Broadcast error:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
+      }
+    });
+  }
+});
+
+const wss = new WebSocketServer({ server }); // Attach WebSocket server to the HTTP server
 
 // A map to store clients per conversation
 const conversations = new Map();
+
+function broadcast(conversationId, message) {
+  const clients = conversations.get(conversationId);
+  if (clients) {
+    console.log(`Broadcasting to ${clients.size} clients in conversation ${conversationId}`);
+    clients.forEach(client => {
+      if (client.readyState === client.OPEN) {
+        client.send(JSON.stringify({ type: 'new_message', message }));
+      }
+    });
+  }
+}
 
 wss.on('connection', (ws) => {
     console.log('Client connected');
@@ -14,7 +51,6 @@ wss.on('connection', (ws) => {
         try {
             const data = JSON.parse(message);
             
-            // When a client subscribes to a conversation
             if (data.type === 'subscribe') {
                 const { conversationId } = data;
                 if (!conversations.has(conversationId)) {
@@ -23,20 +59,6 @@ wss.on('connection', (ws) => {
                 conversations.get(conversationId).add(ws);
                 ws.conversationId = conversationId; // Associate ws with conversation
                 console.log(`Client subscribed to conversation ${conversationId}`);
-            }
-
-            // When a message is received, broadcast it to the correct conversation
-            if (data.type === 'chat_message') {
-                const { message: chatMessage } = data;
-                const { conversationId } = chatMessage;
-                const clients = conversations.get(conversationId);
-                if (clients) {
-                    clients.forEach(client => {
-                        if (client.readyState === ws.OPEN) {
-                            client.send(JSON.stringify({ type: 'new_message', message: chatMessage }));
-                        }
-                    });
-                }
             }
         } catch (error) {
             console.error('Failed to process message:', error);
@@ -57,4 +79,6 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log(`WebSocket server started on port ${port}`);
+server.listen(port, () => {
+  console.log(`WebSocket server with HTTP listener started on port ${port}`);
+});

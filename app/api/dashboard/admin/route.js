@@ -6,8 +6,8 @@ import { startOfMonth, subMonths } from 'date-fns';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
-  const currentUser = await getCurrentUser();
+export async function GET(request) {
+  const currentUser = await getCurrentUser(request);
 
   if (!currentUser || currentUser.userType !== 'ADMIN') {
     return new Response('Unauthorized', { status: 401 });

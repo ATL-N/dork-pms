@@ -7,8 +7,8 @@ import { logAction as log } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
-    const { farmId } = params;
-    const user = await getCurrentUser();
+    const { farmId } = await params;
+    const user = await getCurrentUser(request);
 
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

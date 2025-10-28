@@ -6,6 +6,62 @@ import { z } from "zod";
 
 const prisma = new PrismaClient();
 
+export async function GET(request, { params }) {
+  const { farmId, flockId } = params;
+  const user = await getCurrentUser(request);
+
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const farmAccess = await prisma.farmUser.findUnique({
+    where: {
+      farmId_userId: {
+        farmId: farmId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (!farmAccess && user.userType !== 'ADMIN') {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '0');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const sortBy = searchParams.get('sortBy') || 'date';
+  const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  try {
+    const records = await prisma.mortalityRecord.findMany({
+      where: {
+        flockId: flockId,
+        date: {
+          gte: thirtyDaysAgo,
+        },
+      },
+      include: {
+        flock: true,
+        recordedBy: true,
+      },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      skip: page * limit,
+      take: limit,
+    });
+
+    return NextResponse.json(records, { status: 200 });
+  } catch (error) {
+    console.error("Failed to fetch mortality records:", error);
+    return NextResponse.json({ error: 'Failed to fetch mortality records' }, { status: 500 });
+  }
+}
+
 const paramsSchema = z.object({
   farmId: z.string(),
   flockId: z.string(),
@@ -13,8 +69,8 @@ const paramsSchema = z.object({
 
 const postBodySchema = z.object({
   quantity: z.number().int().positive(),
-  cause: z.string().optional(),
-  // Remove date from the schema since we'll use server-side date
+  cause: z.string().nullable().optional(), // Allow null and optional
+  date: z.string().optional(), // Keep date optional as it can be set on the server
 });
 
 export async function POST(req, { params }) {
@@ -23,7 +79,7 @@ export async function POST(req, { params }) {
     const resolvedParams = await params;
     const { farmId, flockId } = paramsSchema.parse(resolvedParams);
 
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response("Unauthorized", { status: 401 });
@@ -44,30 +100,41 @@ export async function POST(req, { params }) {
     }
 
     const body = await req.json();
-    const { quantity, cause } = postBodySchema.parse(body);
+    const { quantity, cause, date } = postBodySchema.parse(body);
 
-    // Fix 2: Use server-side date
-    const currentDate = new Date();
+    const flock = await prisma.flock.findUnique({ where: { id: flockId } });
+    if (quantity > flock.quantity) {
+      return new Response("Mortality quantity cannot be greater than the number of birds in the flock.", { status: 400 });
+    }
+
+    // Use server-side date if not provided
+    const recordDate = date ? new Date(date) : new Date();
 
     // Use a transaction to record mortality and update flock quantity
-    const [, newRecord] = await prisma.$transaction([
-      prisma.flock.update({
+    const newRecord = await prisma.$transaction(async (prisma) => {
+      const flock = await prisma.flock.findUnique({ where: { id: flockId } });
+      const newQuantity = flock.quantity - quantity;
+
+      await prisma.flock.update({
         where: { id: flockId },
         data: {
           quantity: {
             decrement: quantity,
           },
+          status: newQuantity <= 0 ? 'archived' : undefined,
         },
-      }),
-      prisma.mortalityRecord.create({
+      });
+
+      return await prisma.mortalityRecord.create({
         data: {
           flockId: flockId,
-          date: currentDate, // Use server-side date
+          date: recordDate,
           quantity,
           cause,
+          recordedById: currentUser.id,
         },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json(newRecord, { status: 201 });
   } catch (error) {

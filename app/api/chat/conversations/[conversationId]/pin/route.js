@@ -6,12 +6,12 @@ import { getCurrentUser } from '@/app/lib/session';
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { conversationId } = params;
+    const { conversationId } = await params;
 
     try {
         const existingPin = await prisma.pinnedConversation.findFirst({
@@ -40,12 +40,12 @@ export async function POST(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { conversationId } = params;
+    const { conversationId } = await params;
 
     try {
         // Regular user unpins for themselves

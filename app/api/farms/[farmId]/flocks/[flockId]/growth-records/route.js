@@ -14,7 +14,7 @@ const growthRecordSchema = z.object({
 
 export async function POST(request, { params }) {
   try {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

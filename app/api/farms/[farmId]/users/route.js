@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
   const userId = session.user.id;
 
   const role = await getUserFarmRole(userId, farmId);
@@ -38,7 +38,7 @@ export async function PUT(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId, userId } = params;
+  const { farmId, userId } = await params;
   const { role: newRole } = await request.json();
 
   const currentUserRole = await getUserFarmRole(session.user.id, farmId);
@@ -74,7 +74,7 @@ export async function DELETE(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId, userId } = params;
+  const { farmId, userId } = await params;
 
   const currentUserRole = await getUserFarmRole(session.user.id, farmId);
   if (currentUserRole !== 'OWNER' && currentUserRole !== 'MANAGER') {

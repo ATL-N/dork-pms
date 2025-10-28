@@ -7,12 +7,12 @@ import { logAction as log } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { itemId } = params;
+  const { itemId } = await params;
   const { status } = await request.json();
 
   if (status !== 'archived') {

@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 const LOGS_PER_PAGE = 20;
 
 export async function GET(req) {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser || currentUser.userType !== 'ADMIN') {
         return new Response('Unauthorized', { status: 401 });

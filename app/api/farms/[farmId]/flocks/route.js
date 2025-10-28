@@ -64,7 +64,7 @@ export async function GET(request, { params }) {
 // POST a new flock to a specific farm and generate its health schedule
 export async function POST(request, { params }) {
   const { farmId } = await params;
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -134,12 +134,16 @@ export async function POST(request, { params }) {
       return flock;
     });
 
-    await logAction({
-      level: "INFO",
-      message: `User ${user.email} created new flock '${name}' in farm ${farmId}.`,
-      userId: user.id,
-      meta: { farmId, flockId: newFlock.id, flockName: name },
-    });
+    await logAction(
+      "INFO",
+      `User ${user.email} created new flock '${name}' in farm ${farmId}.`,
+      {
+        farmId,
+        flockId: newFlock.id,
+        flockName: name,
+        userId: user.id,
+      }
+    );
 
     return NextResponse.json(newFlock, { status: 201 });
   } catch (error) {

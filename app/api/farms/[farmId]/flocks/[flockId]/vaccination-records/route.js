@@ -20,7 +20,7 @@ const postBodySchema = z.object({
 export async function GET(req, context) {
   try {
     const { params } = routeContextSchema.parse(context);
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response('Unauthorized', { status: 401 });
@@ -59,7 +59,7 @@ export async function GET(req, context) {
 export async function POST(req, context) {
   try {
     const { params } = routeContextSchema.parse(context);
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response('Unauthorized', { status: 401 });

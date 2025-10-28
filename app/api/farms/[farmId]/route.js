@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
   const userId = session.id;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -49,7 +49,7 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
   const userId = session.id;
   const body = await request.json();
 

@@ -137,6 +137,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
   ownerApprovalStatus OwnerApprovalStatus?
+  fcmToken      String?
 
   ownedFarms    Farm[]           @relation("FarmOwner")
   accounts      Account[]
@@ -160,6 +161,9 @@ model User {
   logs          Log[]
   recordedBirdResales BirdResale[]
   recordedEggSales EggSale[]
+  eggProductionRecords EggProductionRecord[]
+  mortalityRecords     MortalityRecord[]
+  growthRecords        GrowthRecord[]
 }
 
 model CustomTaskSchedule {
@@ -458,13 +462,18 @@ model HealthTask {
 }
 
 model GrowthRecord {
-  id        String   @id @default(cuid())
-  date      DateTime
-  weight    Float
-  flockId   String
+  id           String   @id @default(cuid())
+  date         DateTime
+  weight       Float
+  flockId      String
+  recordedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  flock     Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  flock      Flock @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  recordedBy User  @relation(fields: [recordedById], references: [id])
 }
+
 
 model EggProductionRecord {
   id              String   @id @default(cuid())
@@ -473,19 +482,30 @@ model EggProductionRecord {
   brokenEggs      Int
   averageWeight   Float?
   flockId         String
+  recordedById    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   flock           Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  recordedBy      User     @relation(fields: [recordedById], references: [id])
+
+  @@index([flockId, date])
 }
 
 model MortalityRecord {
-  id        String   @id @default(cuid())
-  date      DateTime
-  quantity  Int
-  cause     String?
-  flockId   String
+  id           String   @id @default(cuid())
+  date         DateTime
+  quantity     Int
+  cause        String?
+  flockId      String
+  recordedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  flock     Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  flock      Flock @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  recordedBy User  @relation(fields: [recordedById], references: [id])
 }
+
 
 model FeedItem {
   id            String   @id @default(cuid())
@@ -523,6 +543,8 @@ model FeedConsumption {
   flock       Flock    @relation(fields: [flockId], references: [id])
   feedItem    FeedItem @relation(fields: [feedItemId], references: [id])
   recordedBy  User     @relation(fields: [recordedById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model FeedFormulation {

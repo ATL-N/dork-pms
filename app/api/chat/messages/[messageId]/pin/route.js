@@ -6,12 +6,12 @@ import { getCurrentUser } from '@/app/lib/session';
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { messageId } = params;
+    const { messageId } = await params;
     const { isPinned } = await request.json();
 
     try {

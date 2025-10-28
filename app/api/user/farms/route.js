@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 export async function GET(req) {
   try {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response('Unauthorized', { status: 401 });

@@ -14,20 +14,20 @@ const routeContextSchema = z.object({
   }),
 });
 
-export async function GET(req, context) {
-  const currentUser = await getCurrentUser();
+export async function GET(req, {params}) {
+  const currentUser = await getCurrentUser(req);
   if (!currentUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { params } = routeContextSchema.parse(await context);
+    const { flockId, farmId } = await params;
     
-    const farm = await prisma.farm.findUnique({ where: { id: params.farmId } });
-    const farmUser = await prisma.farmUser.findFirst({ where: { farmId: params.farmId, userId: currentUser.id } });
+    const farm = await prisma.farm.findUnique({ where: { id: farmId } });
+    const farmUser = await prisma.farmUser.findFirst({ where: { farmId: farmId, userId: currentUser.id } });
 
     if (!farm || (farm.ownerId !== currentUser.id && !farmUser && currentUser.userType !== 'ADMIN')) {
-        await logAction('WARN', `User ${currentUser.id} unauthorized to view flock ${params.flockId}.`);
+        await logAction('WARN', `User ${currentUser.id} unauthorized to view flock ${flockId}.`);
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -47,11 +47,11 @@ export async function GET(req, context) {
     });
 
     if (!flock) {
-      await logAction('WARN', `User ${currentUser.id} failed to find flock ${params.flockId}.`);
+      await logAction('WARN', `User ${currentUser.id} failed to find flock ${flockId}.`);
       return NextResponse.json({ error: 'Flock not found' }, { status: 404 });
     }
 
-    await logAction('INFO', `User ${currentUser.id} viewed details for flock ${params.flockId}.`, { userId: currentUser.id, farmId: params.farmId });
+    await logAction('INFO', `User ${currentUser.id} viewed details for flock ${flockId}.`, { userId: currentUser.id, farmId: farmId });
     return NextResponse.json(flock);
 
   } catch (error) {
@@ -63,20 +63,20 @@ export async function GET(req, context) {
   }
 }
 
-export async function PUT(req, context) {
-    const currentUser = await getCurrentUser();
+export async function PUT(req, {params}) {
+    const currentUser = await getCurrentUser(req);
     if (!currentUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const { params } = routeContextSchema.parse(await context);
+        const { flockId, farmId} = await params;
         
-        const farm = await prisma.farm.findUnique({ where: { id: params.farmId } });
-        const farmUser = await prisma.farmUser.findFirst({ where: { farmId: params.farmId, userId: currentUser.id, role: { in: ['OWNER', 'MANAGER'] } } });
+        const farm = await prisma.farm.findUnique({ where: { id: farmId } });
+        const farmUser = await prisma.farmUser.findFirst({ where: { farmId: farmId, userId: currentUser.id, role: { in: ['OWNER', 'MANAGER'] } } });
 
         if (!farm || (farm.ownerId !== currentUser.id && !farmUser && currentUser.userType !== 'ADMIN')) {
-            await logAction('WARN', `User ${currentUser.id} unauthorized to edit flock ${params.flockId}.`);
+            await logAction('WARN', `User ${currentUser.id} unauthorized to edit flock ${flockId}.`);
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
@@ -84,13 +84,13 @@ export async function PUT(req, context) {
         
         const updatedFlock = await prisma.flock.update({
             where: {
-                id: params.flockId,
-                farmId: params.farmId,
+                id: flockId,
+                farmId: farmId,
             },
             data: body,
         });
 
-        await logAction('INFO', `User ${currentUser.id} updated flock ${params.flockId}.`, { userId: currentUser.id, farmId: params.farmId, changes: body });
+        await logAction('INFO', `User ${currentUser.id} updated flock ${flockId}.`, { userId: currentUser.id, farmId: farmId, changes: body });
         return NextResponse.json(updatedFlock);
 
     } catch (error) {

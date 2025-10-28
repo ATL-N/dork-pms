@@ -8,12 +8,12 @@ const prisma = new PrismaClient();
 
 // PUT to update a feed formulation
 export async function PUT(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId, formulationId } = params;
+  const { farmId, formulationId } = await params;
   const { name, description, ingredients } = await request.json();
 
   if (!name || !ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
@@ -75,12 +75,12 @@ export async function PUT(request, { params }) {
 
 // DELETE a feed formulation
 export async function DELETE(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId, formulationId } = params;
+  const { farmId, formulationId } = await params;
 
   try {
     // Authorization check

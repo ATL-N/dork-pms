@@ -6,12 +6,12 @@ import { log } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { taskId } = params;
+  const { taskId } = await params;
   const data = await request.json();
 
   try {
@@ -109,12 +109,12 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { taskId } = params;
+  const { taskId } = await params;
 
   try {
     const task = await prisma.task.findUnique({

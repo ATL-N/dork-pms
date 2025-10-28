@@ -12,7 +12,7 @@ export async function PUT(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId, consumptionId } = params;
+  const { farmId, consumptionId } = await params;
   const userId = session.user.id;
 
   const role = await getUserFarmRole(userId, farmId);
@@ -40,7 +40,7 @@ export async function DELETE(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId, consumptionId } = params;
+  const { farmId, consumptionId } = await params;
   const userId = session.user.id;
 
   const role = await getUserFarmRole(userId, farmId);

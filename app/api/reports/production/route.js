@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 const prisma = new PrismaClient();
 
 export async function GET(request) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }

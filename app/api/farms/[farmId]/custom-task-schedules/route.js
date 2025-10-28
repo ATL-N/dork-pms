@@ -7,12 +7,12 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function GET(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
 
   try {
     const schedules = await prisma.customTaskSchedule.findMany({
@@ -26,12 +26,12 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
   const data = await request.json();
   const { applyToAllFarms, ...scheduleData } = data;
 

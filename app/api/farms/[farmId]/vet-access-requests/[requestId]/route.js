@@ -19,13 +19,13 @@ const patchBodySchema = z.object({
 });
 
 export async function PATCH(req, context) {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const { params } = routeContextSchema.parse(await context);
+        const { params } = await routeContextSchema.parse(await context);
         const { farmId, requestId } = params;
         const body = await req.json();
         const { status } = patchBodySchema.parse(body);

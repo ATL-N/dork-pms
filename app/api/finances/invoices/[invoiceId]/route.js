@@ -11,12 +11,12 @@ const updateInvoiceSchema = z.object({
 });
 
 export async function PUT(request, { params }) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { invoiceId } = params;
+  const { invoiceId } = await params;
   if (!invoiceId) {
     return NextResponse.json({ error: 'Invoice ID is required' }, { status: 400 });
   }

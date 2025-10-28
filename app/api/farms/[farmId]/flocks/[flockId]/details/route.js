@@ -18,7 +18,7 @@ export async function GET(req, { params }) {
     const resolvedParams = await params;
     const { farmId, flockId } = paramsSchema.parse(resolvedParams);
 
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       await logAction(

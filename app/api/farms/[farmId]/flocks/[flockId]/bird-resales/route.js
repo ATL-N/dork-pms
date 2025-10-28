@@ -14,12 +14,12 @@ const postBodySchema = z.object({
 });
 
 export async function POST(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { farmId, flockId } = params;
+    const { farmId, flockId } = await params;
     
     try {
         const body = await request.json();

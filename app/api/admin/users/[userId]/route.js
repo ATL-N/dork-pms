@@ -6,8 +6,8 @@ import { getCurrentUser } from '@/app/lib/session';
 const prisma = new PrismaClient();
 
 export async function PUT(req, { params }) {
-    const currentUser = await getCurrentUser();
-    const { userId } = params;
+    const currentUser = await getCurrentUser(req);
+    const { userId } = await params;
 
     if (!currentUser || currentUser.userType !== 'ADMIN') {
         return new Response('Unauthorized', { status: 401 });
@@ -35,8 +35,8 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-    const currentUser = await getCurrentUser();
-    const { userId } = params;
+    const currentUser = await getCurrentUser(req);
+    const { userId } = await params;
 
     if (!currentUser || currentUser.userType !== 'ADMIN') {
         return new Response('Unauthorized', { status: 401 });

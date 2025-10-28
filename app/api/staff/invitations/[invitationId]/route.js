@@ -9,12 +9,12 @@ const prisma = new PrismaClient();
 
 // Cancel an invitation
 export async function DELETE(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { invitationId } = params;
+    const { invitationId } = await params;
 
     try {
         const invitation = await prisma.invitation.findUnique({ where: { id: invitationId } });

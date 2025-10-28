@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
   const session = await getSession({ req: request });
-  const { userId } = params;
+  const { userId } = await params;
 
   if (!session || session.user.id !== userId) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });

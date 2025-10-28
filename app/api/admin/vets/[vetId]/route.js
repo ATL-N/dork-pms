@@ -6,8 +6,8 @@ import { getCurrentUser } from '@/app/lib/session';
 const prisma = new PrismaClient();
 
 export async function DELETE(req, { params }) {
-    const currentUser = await getCurrentUser();
-    const { vetId } = params;
+    const currentUser = await getCurrentUser(req);
+    const { vetId } = await params;
 
     if (!currentUser || currentUser.userType !== 'ADMIN') {
         return new Response('Unauthorized', { status: 401 });

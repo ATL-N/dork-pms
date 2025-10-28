@@ -15,7 +15,7 @@ const routeContextSchema = z.object({
 export async function GET(req, context) {
   try {
     const { params } = routeContextSchema.parse(context);
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response('Unauthorized', { status: 401 });

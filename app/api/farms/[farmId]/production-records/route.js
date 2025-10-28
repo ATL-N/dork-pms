@@ -7,9 +7,67 @@ import { completeTaskIfDue } from '@/app/lib/taskUtils';
 
 const prisma = new PrismaClient();
 
+export async function GET(request, { params }) {
+  const { farmId } = await params;
+  const user = await getCurrentUser(request);
+
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const farmAccess = await prisma.farmUser.findUnique({
+    where: {
+      farmId_userId: {
+        farmId: farmId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (!farmAccess && user.userType !== 'ADMIN') {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '0');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const sortBy = searchParams.get('sortBy') || 'date';
+  const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  try {
+    const records = await prisma.eggProductionRecord.findMany({
+      where: {
+        flock: {
+          farmId: farmId,
+        },
+        date: {
+          gte: thirtyDaysAgo,
+        },
+      },
+      include: {
+        flock: true,
+        recordedBy: true,
+      },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      skip: page * limit,
+      take: limit,
+    });
+
+    return NextResponse.json(records, { status: 200 });
+  } catch (error) {
+    console.error("Failed to fetch egg production records:", error);
+    return NextResponse.json({ error: 'Failed to fetch egg production records' }, { status: 500 });
+  }
+}
+
 export async function POST(request, { params }) {
-  const { farmId } = params;
-  const user = await getCurrentUser();
+  const { farmId } = await params;
+  const user = await getCurrentUser(request);
 
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -31,7 +89,7 @@ export async function POST(request, { params }) {
 
   try {
     const body = await request.json();
-    const { flockId, totalEggs, brokenEggs, notes } = body;
+    const { flockId, totalEggs, brokenEggs, notes, date } = body;
 
     if (!flockId || totalEggs === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -48,10 +106,11 @@ export async function POST(request, { params }) {
     const newRecord = await prisma.eggProductionRecord.create({
       data: {
         flockId,
-        date: new Date(),
+        date: date ? new Date(date) : new Date(),
         totalEggs: parseInt(totalEggs, 10),
         brokenEggs: brokenEggs ? parseInt(brokenEggs, 10) : 0,
         notes,
+        recordedById: user.id,
       },
     });
 

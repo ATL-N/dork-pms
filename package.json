@@ -19,6 +19,7 @@
     "concurrently": "^9.2.0",
     "date-fns": "^4.1.0",
     "dotenv-cli": "^8.0.0",
+    "firebase-admin": "^13.5.0",
     "jose": "^6.1.0",
     "lucide-react": "^0.486.0",
     "moment": "^2.30.1",

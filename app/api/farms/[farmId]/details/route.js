@@ -16,7 +16,7 @@ export async function GET(req, {params}) {
   try {
     
     const { farmId } = await params;
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser) {
       return new Response('Unauthorized', { status: 401 });

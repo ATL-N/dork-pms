@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 // GET all feed items for a farm
 export async function GET(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
 
 // POST a new feed item to a farm
 export async function POST(request, { params }) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }

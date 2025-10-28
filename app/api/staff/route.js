@@ -1,138 +1,138 @@
-// app/api/staff/route.js
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from '@/app/lib/session';
 import bcrypt from 'bcrypt';
-import { logAction } from '@/app/lib/logging';
+import { getCurrentUser } from '@/app/lib/session';
 
 const prisma = new PrismaClient();
 
+// GET /api/staff?farmId=<farmId>
+// Gets all staff members for a given farm
 export async function GET(request) {
-    const user = await getCurrentUser();
-    if (!user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  try {
+    const currentUser = await getCurrentUser(request);
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const farmId = searchParams.get('farmId');
 
     if (!farmId) {
-        return NextResponse.json({ error: 'farmId is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Farm ID is required' }, { status: 400 });
     }
 
-    try {
-        const farmAccess = await prisma.farmUser.findFirst({
-            where: {
-                userId: user.id,
-                farmId: farmId,
-            },
-        });
-
-        if (!farmAccess && user.userType !== 'ADMIN') {
-            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    // Check if the current user has rights to view staff (is a member of the farm)
+    const userAccess = await prisma.farmUser.findFirst({
+        where: {
+            farmId: farmId,
+            userId: currentUser.id,
         }
+    });
 
-        const staff = await prisma.farmUser.findMany({
-            where: { farmId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-            orderBy: {
-                assignedAt: 'desc',
-            },
-        });
+    const farm = await prisma.farm.findUnique({ where: { id: farmId } });
 
-        return NextResponse.json(staff);
-    } catch (error) {
-        console.error('Error fetching staff:', error);
-        return NextResponse.json({ error: 'Failed to fetch staff' }, { status: 500 });
+    if (!userAccess && farm?.ownerId !== currentUser.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const staff = await prisma.farmUser.findMany({
+      where: { farmId: farmId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(staff);
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
+
+// POST /api/staff
+// Directly adds a new worker to a farm
 export async function POST(request) {
-    const currentUser = await getCurrentUser();
+  try {
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // For now, only farm owners can add staff. This can be expanded later.
-    const isOwner = currentUser.isOwner;
-    if (!isOwner) {
-        return NextResponse.json({ error: 'Only farm owners can add new staff.' }, { status: 403 });
+    const { farmId, name, email, role } = await request.json();
+
+    if (!farmId || !name || !email || !role) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+    
+    // Authorization: Check if current user is OWNER or MANAGER of the farm
+    const farm = await prisma.farm.findUnique({ where: { id: farmId } });
+    const userAccess = await prisma.farmUser.findFirst({
+        where: { farmId: farmId, userId: currentUser.id }
+    });
+
+    const canManageStaff = farm?.ownerId === currentUser.id || userAccess?.role === 'MANAGER';
+
+    if (!canManageStaff) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    try {
-        const { name, email, password, contact, role, farmIds } = await request.json();
+    // Check if user already exists
+    let user = await prisma.user.findUnique({ where: { email } });
 
-        if (!name || !email || !password || !role || !farmIds || farmIds.length === 0) {
-            return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+    if (user) {
+        // If user exists, check if they are already on the farm
+        const existingFarmUser = await prisma.farmUser.findFirst({
+            where: { farmId, userId: user.id }
+        });
+        if (existingFarmUser) {
+            return NextResponse.json({ error: 'User is already a member of this farm' }, { status: 409 });
         }
+    } else {
+        // User does not exist, create them with a temporary password
+        const tempPassword = Math.random().toString(36).slice(-8);
+        const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return NextResponse.json({ error: 'A user with this email already exists.' }, { status: 409 });
-        }
-
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        const newUser = await prisma.user.create({
+        user = await prisma.user.create({
             data: {
                 name,
                 email,
                 passwordHash,
-                userType: 'FARMER',
-                emailVerified: new Date(), // Owner is creating the user directly
-                profile: {
-                    create: {
-                        contact,
-                        hireDate: new Date(),
-                    },
-                },
-                farms: {
-                    create: farmIds.map(farmId => ({
-                        farmId: farmId,
-                        role: role,
-                    })),
-                },
+                userType: 'FARMER', // All staff are FARMER type
             },
-            include: {
-                profile: true,
-                farms: true,
-            }
         });
         
-        await logAction('INFO', `Owner ${currentUser.name} added new staff: ${newUser.name}`, { ownerId: currentUser.id, newUserId: newUser.id });
-
-        const { passwordHash: _, ...userWithoutPassword } = newUser;
-        
-        // Add user to General Chat
-        try {
-            const generalChat = await prisma.conversation.findUnique({
-                where: { name: 'General Chat' },
-            });
-            if (generalChat) {
-                await prisma.conversationParticipant.create({
-                    data: {
-                        conversationId: generalChat.id,
-                        userId: newUser.id,
-                    },
-                });
-            }
-        } catch (chatError) {
-            console.error("Failed to add user to General Chat:", chatError);
-        }
-
-        return NextResponse.json(userWithoutPassword, { status: 201 });
-
-    } catch (error) {
-        console.error('Error adding staff:', error);
-        await logAction('ERROR', `Failed to add staff`, { ownerId: currentUser.id, error: error.message });
-        return NextResponse.json({ error: 'Failed to add staff member.' }, { status: 500 });
+        // TODO: The temporary password needs to be communicated to the user.
+        // For now, we can return it in the response for the admin to copy.
+        // In a real app, you might email it or force a password reset on first login.
+        console.log(`Temp password for ${email}: ${tempPassword}`);
     }
+
+    // Add user to the farm
+    const newFarmUser = await prisma.farmUser.create({
+      data: {
+        farmId,
+        userId: user.id,
+        role, // 'WORKER' or 'MANAGER'
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    return NextResponse.json(newFarmUser, { status: 201 });
+
+  } catch (error) {
+    console.error('Error adding worker:', error);
+    if (error.code === 'P2002') { // Unique constraint failed (email)
+        return NextResponse.json({ error: 'A user with this email already exists.' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

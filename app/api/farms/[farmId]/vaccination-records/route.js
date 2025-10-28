@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { farmId } = params;
+  const { farmId } = await params;
   const hasAccess = await canUserAccessFarm(user.id, farmId);
 
   if (!hasAccess) {

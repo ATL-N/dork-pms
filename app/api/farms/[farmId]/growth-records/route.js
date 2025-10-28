@@ -7,8 +7,8 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function GET(request, { params }) {
-    const { farmId } = params;
-    const user = await getCurrentUser();
+    const { farmId } = await params;
+    const user = await getCurrentUser(request);
 
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -23,10 +23,30 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: 'You do not have access to this farm.' }, { status: 403 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get('page') || '0');
+        const limit = parseInt(searchParams.get('limit') || '10');
+        const sortBy = searchParams.get('sortBy') || 'date';
+        const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
         const growthRecords = await prisma.growthRecord.findMany({
-            where: { flock: { farmId: farmId } },
-            include: { flock: { select: { name: true, farmId: true } } },
-            orderBy: { date: 'desc' },
+            where: {
+                flock: {
+                    farmId: farmId,
+                },
+                date: {
+                    gte: thirtyDaysAgo,
+                },
+            },
+            include: { flock: true, recordedBy: true },
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+            skip: page * limit,
+            take: limit,
         });
 
         return NextResponse.json(growthRecords);

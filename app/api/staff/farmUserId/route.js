@@ -8,12 +8,12 @@ const prisma = new PrismaClient();
 
 // Update user role
 export async function PUT(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { farmUserId } = params;
+    const { farmUserId } = await params;
     const { farmId, role } = await request.json();
 
     if (!farmId || !role) {
@@ -55,12 +55,12 @@ export async function PUT(request, { params }) {
 
 // Remove user from farm
 export async function DELETE(request, { params }) {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { farmUserId } = params;
+    const { farmUserId } = await params;
     const { searchParams } = new URL(request.url);
     const farmId = searchParams.get('farmId');
 

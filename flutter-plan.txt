@@ -77,9 +77,13 @@ The application will be built with an offline-first architecture at its core.
     -   **Add/Edit Flock Form:** Allows creating and updating flocks. On save, writes to the local DB and adds the action to the sync queue.
     -   **Inventory List Page:** Shows feed, medication, etc.
     -   **Add/Edit Inventory Item Form:** Offline-first CRUD operations for inventory.
-4.  **Production Records:**
+4.  **Production & Health Records:**
     -   **Egg Collection Form:** A simple form to log daily egg collection. Works completely offline and syncs in the background.
     -   **Mortality Records Form:** Similar offline-first form for logging mortalities.
+    -   **Weight Records Form:** Similar offline-first form for logging weights.
+    -   **Log Pages:** Paginated, searchable, and sortable log pages for egg, mortality, and weight records.
+    -   **Editing & Deleting:** Role-based permissions for editing and deleting records.
+    -   **Confirmation Dialogs:** Confirmation dialogs for all create, update, and delete operations.
 
 ---
 

@@ -7,13 +7,72 @@ import { completeTaskIfDue } from '@/app/lib/taskUtils';
 
 const prisma = new PrismaClient();
 
-export async function POST(request, { params }) {
-  const user = await getCurrentUser();
+export async function GET(request, { params }) {
+  const { farmId } = await params;
+  const user = await getCurrentUser(request);
+
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { farmId } = params;
+  const farmAccess = await prisma.farmUser.findUnique({
+    where: {
+      farmId_userId: {
+        farmId: farmId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (!farmAccess && user.userType !== 'ADMIN') {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '0');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const sortBy = searchParams.get('sortBy') || 'date';
+  const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  try {
+    const records = await prisma.feedConsumption.findMany({
+      where: {
+        flock: {
+          farmId: farmId,
+        },
+        date: {
+          gte: thirtyDaysAgo,
+        },
+      },
+      include: {
+        flock: true,
+        recordedBy: true,
+        feedItem: true,
+      },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      skip: page * limit,
+      take: limit,
+    });
+
+    return NextResponse.json(records, { status: 200 });
+  } catch (error) {
+    console.error("Failed to fetch feed consumption records:", error);
+    return NextResponse.json({ error: 'Failed to fetch feed consumption records' }, { status: 500 });
+  }
+}
+
+export async function POST(request, { params }) {
+  const user = await getCurrentUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const { farmId } = await params;
   const { flockId, feedItemId, quantity, notes } = await request.json();
 
   if (!flockId || !feedItemId || !quantity) {

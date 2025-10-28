@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 export async function POST(req) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser(req);
 
   if (!currentUser || currentUser.userType !== 'ADMIN') {
     return new Response('Unauthorized', { status: 401 });

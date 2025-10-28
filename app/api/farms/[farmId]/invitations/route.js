@@ -14,13 +14,13 @@ const postBodySchema = z.object({
 });
 
 export async function POST(req, { params }) {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
     if (!currentUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const { farmId } = params;
+        const { farmId } = await params;
         const body = await req.json();
         const { email, role } = postBodySchema.parse(body);
 

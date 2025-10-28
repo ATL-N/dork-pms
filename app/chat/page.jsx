@@ -147,7 +147,14 @@ const ChatPage = () => {
         }
     };
 
-    useEffect(scrollToBottom, [messages]);
+    useEffect(() => {
+        // This useEffect handles scrolling to the bottom when the messages array changes.
+        // It's debounced slightly to allow the DOM to update before scrolling.
+        const timer = setTimeout(() => {
+            scrollToBottom();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [messages]);
 
     useEffect(() => {
         if (replyingTo) {
@@ -173,7 +180,12 @@ const ChatPage = () => {
         ws.current.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'new_message' && data.message.conversationId === activeConversation.id) {
-                setMessages(prevMessages => [...prevMessages, data.message]);
+                setMessages(prevMessages => {
+                    if (prevMessages.some(m => m.id === data.message.id)) {
+                        return prevMessages; // Don't add the duplicate
+                    }
+                    return [...prevMessages, data.message];
+                });
             }
             if (data.type === 'message_deleted' && data.message.conversationId === activeConversation.id) {
                 setMessages(prevMessages => 
@@ -283,11 +295,7 @@ const ChatPage = () => {
 
             if (!res.ok) throw new Error('Failed to send message');
             
-            const sentMessage = await res.json();
-
-            if (ws.current?.readyState === WebSocket.OPEN) {
-                ws.current.send(JSON.stringify({ type: 'chat_message', message: sentMessage }));
-            }
+            // Server handles broadcast, we wait for the echo via WebSocket.
             
             setNewMessage('');
             setMediaFile(null);

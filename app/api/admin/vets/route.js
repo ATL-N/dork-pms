@@ -5,8 +5,8 @@ import { getCurrentUser } from '@/app/lib/session';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
-  const currentUser = await getCurrentUser();
+export async function GET(request) {
+  const currentUser = await getCurrentUser(request);
 
   if (!currentUser || currentUser.userType !== 'ADMIN') {
     return new Response('Unauthorized', { status: 401 });
@@ -46,7 +46,7 @@ export async function GET() {
 }
 
 export async function PUT(req) {
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(req);
 
     if (!currentUser || currentUser.userType !== 'ADMIN') {
         return new Response('Unauthorized', { status: 401 });

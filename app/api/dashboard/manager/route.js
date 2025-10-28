@@ -5,8 +5,8 @@ import { getCurrentUser } from '@/app/lib/session';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
-  const currentUser = await getCurrentUser();
+export async function GET(request) {
+  const currentUser = await getCurrentUser(request);
 
   if (!currentUser) {
     return new Response('Unauthorized', { status: 401 });

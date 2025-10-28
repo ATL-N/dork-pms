@@ -7,7 +7,7 @@ export async function middleware(req) {
   console.log("Middleware running for:", pathname);
 
   // Let authentication API routes pass through
-  if (pathname.startsWith('/api/auth')) {
+  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/veterinarians') ) {
     return NextResponse.next();
   }
 

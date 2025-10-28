@@ -83,7 +83,7 @@ export async function POST(request, { params }) {
     }
 
     const data = await request.json();
-    const { name, type, breed, quantity, startDate, location, costPerBird } =
+    const { id: tempId, name, type, breed, quantity, startDate, location, costPerBird } =
       data;
 
     if (!name || !type || !quantity || !startDate) {
@@ -97,6 +97,7 @@ export async function POST(request, { params }) {
     const newFlock = await prisma.$transaction(async (tx) => {
       const flock = await tx.flock.create({
         data: {
+          id: tempId, // Use the client-generated ID
           farmId,
           name,
           type,
@@ -145,7 +146,7 @@ export async function POST(request, { params }) {
       }
     );
 
-    return NextResponse.json(newFlock, { status: 201 });
+    return NextResponse.json({ flock: newFlock, tempId }, { status: 201 });
   } catch (error) {
     await logAction(
       "ERROR",

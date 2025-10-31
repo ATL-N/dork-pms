@@ -51,7 +51,7 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { name, location } = await request.json();
+  const { id: tempId, name, location } = await request.json();
 
   if (!name) {
     await logAction('WARN', 'Farm creation attempt with no name', { userId: user.id });
@@ -61,13 +61,14 @@ export async function POST(request) {
   try {
     const newFarm = await prisma.farm.create({
       data: {
+        id: tempId,
         name,
         location,
         ownerId: user.id,
         users: {
           create: {
             userId: user.id,
-            role: 'OWNER',
+            role: "OWNER",
           },
         },
       },

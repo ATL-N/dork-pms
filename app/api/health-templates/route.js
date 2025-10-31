@@ -1,7 +1,7 @@
 // app/api/health-templates/route.js
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@/app/lib/session";
+// import { getCurrentUser } from "@/app/lib/session";
 
 const prisma = new PrismaClient();
 
@@ -28,12 +28,12 @@ const prisma = new PrismaClient();
  *         description: Internal server error
  */
 export async function GET(request) {
-  const user = await getCurrentUser(request);
+  // const user = await getCurrentUser(request);
 
-  if (!user) {
-    // Although templates are generic, we protect the endpoint from public access.
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  // if (!user) {
+  //   // Although templates are generic, we protect the endpoint from public access.
+  //   return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  // }
 
   try {
     const templates = await prisma.healthScheduleTemplate.findMany({
@@ -42,6 +42,7 @@ export async function GET(request) {
         { day: 'asc' },
       ],
     });
+    console.log('health templates fetched', templates)
     return NextResponse.json(templates);
   } catch (error) {
     console.error("Failed to fetch health schedule templates:", error);

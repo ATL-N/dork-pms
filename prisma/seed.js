@@ -1,4 +1,4 @@
-const { PrismaClient, FlockType, TransactionType, InvoiceType, InvoiceStatus, Role } = require('@prisma/client');
+const { PrismaClient, FlockType, UserType, ApprovalStatus } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
@@ -148,6 +148,38 @@ const taskTemplates = [
   { birdType: FlockType.LAYER, ageStartDays: 127, ageEndDays: 1000, taskName: 'Collect Eggs', taskDescription: 'Collect eggs from the nests.', timesPerDay: 2 },
 ];
 
+async function seedUsers() {
+  console.log('Seeding users...');
+  const password = 'password123';
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const users = [
+    { email: 'admin@example.com', name: 'Admin User', userType: UserType.ADMIN, approvalStatus: ApprovalStatus.APPROVED },
+    { email: 'worker@example.com', name: 'Farmer User', userType: UserType.FARMER, approvalStatus: ApprovalStatus.APPROVED },
+    { email: 'vet@example.com', name: 'Vet User', userType: UserType.VET, approvalStatus: ApprovalStatus.APPROVED }
+  ];
+
+  for (const user of users) {
+    const existingUser = await prisma.user.findUnique({ where: { email: user.email } });
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email: user.email,
+          name: user.name,
+          passwordHash: passwordHash,
+          userType: user.userType,
+          ownerApprovalStatus: user.approvalStatus,
+          emailVerified: new Date(),
+        },
+      });
+      console.log(`Created user: ${user.email}`);
+    } else {
+      console.log(`User already exists: ${user.email}`);
+    }
+  }
+  console.log('Users seeded.');
+}
+
 async function seedTaskTemplates() {
   console.log('Seeding task templates...');
   for (const template of taskTemplates) {
@@ -162,7 +194,6 @@ async function seedTaskTemplates() {
 
 async function seedHealthTemplates() {
   console.log('Seeding health schedule templates...');
-  // First, delete all existing templates to ensure a clean slate
   await prisma.healthScheduleTemplate.deleteMany({});
   console.log('Cleared old health schedule templates.');
 
@@ -186,3 +217,18 @@ async function seedHealthTemplates() {
   }
   console.log('Health schedule templates seeded.');
 }
+
+async function main() {
+  await seedUsers();
+  await seedTaskTemplates();
+  await seedHealthTemplates();
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

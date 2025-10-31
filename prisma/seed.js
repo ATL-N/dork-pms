@@ -1,4 +1,4 @@
-const { PrismaClient, FlockType, UserType, ApprovalStatus } = require('@prisma/client');
+const { PrismaClient, FlockType, UserType, OwnerApprovalStatus } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
@@ -154,9 +154,9 @@ async function seedUsers() {
   const passwordHash = await bcrypt.hash(password, 10);
 
   const users = [
-    { email: 'admin@example.com', name: 'Admin User', userType: UserType.ADMIN, approvalStatus: ApprovalStatus.APPROVED },
-    { email: 'worker@example.com', name: 'Farmer User', userType: UserType.FARMER, approvalStatus: ApprovalStatus.APPROVED },
-    { email: 'vet@example.com', name: 'Vet User', userType: UserType.VET, approvalStatus: ApprovalStatus.APPROVED }
+    { email: 'admin@example.com', name: 'Admin User', userType: UserType.ADMIN, ownerApprovalStatus: OwnerApprovalStatus.APPROVED },
+    { email: 'worker@example.com', name: 'Farmer User', userType: UserType.FARMER, ownerApprovalStatus: OwnerApprovalStatus.APPROVED },
+    { email: 'vet@example.com', name: 'Vet User', userType: UserType.VET, ownerApprovalStatus: OwnerApprovalStatus.APPROVED }
   ];
 
   for (const user of users) {
@@ -168,7 +168,7 @@ async function seedUsers() {
           name: user.name,
           passwordHash: passwordHash,
           userType: user.userType,
-          ownerApprovalStatus: user.approvalStatus,
+          ownerApprovalStatus: user.ownerApprovalStatus,
           emailVerified: new Date(),
         },
       });

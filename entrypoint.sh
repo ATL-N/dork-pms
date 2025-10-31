@@ -24,13 +24,8 @@ echo "Running database migrations..."
 npx prisma migrate deploy
 
 # 3. Check if the database is seeded
-echo "Checking if database is seeded..."
-if node scripts/check-seed.js; then
-  echo "Database is already seeded. Skipping seed."
-else
-  echo "Database is not seeded. Seeding now..."
+echo "Seeding database..."
   npx prisma db seed
-fi
 
 # 4. Prune development dependencies to reduce image size
 echo "Pruning development dependencies..."

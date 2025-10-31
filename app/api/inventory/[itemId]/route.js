@@ -12,14 +12,10 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { itemId } = await params;
-  const { status } = await request.json();
-
-  if (status !== 'archived') {
-    return NextResponse.json({ error: 'Invalid status provided' }, { status: 400 });
-  }
-
   try {
+    const { itemId } = await params;
+    const body = await request.json();
+
     const item = await prisma.inventoryItem.findUnique({
       where: { id: itemId },
       select: { farmId: true },
@@ -44,25 +40,23 @@ export async function PUT(request, { params }) {
 
     const updatedItem = await prisma.inventoryItem.update({
       where: { id: itemId },
-      data: { status: 'archived' },
+      data: body,
     });
 
-    await log({
-      level: 'info',
-      message: `Inventory item ${updatedItem.name} (ID: ${itemId}) archived by user ${currentUser.email}`,
-      userId: currentUser.id,
-      meta: { farmId: item.farmId, itemId },
-    });
+    await log(
+      'info',
+      `Inventory item ${updatedItem.name} (ID: ${itemId}) updated by user ${currentUser.email}`,
+      { farmId: item.farmId, itemId, userId: currentUser.id },
+    );
 
     return NextResponse.json(updatedItem);
   } catch (error) {
-    console.error('Error archiving inventory item:', error);
-    await log({
-      level: 'error',
-      message: `Failed to archive inventory item ID: ${itemId}`,
-      userId: currentUser.id,
-      meta: { error: error.message },
-    });
-    return NextResponse.json({ error: 'Failed to archive inventory item' }, { status: 500 });
+    console.error('Error updating inventory item:', error);
+    await log(
+      'error',
+      `Failed to update inventory item ID: ${itemId}`,
+      { error: error.message, userId: currentUser.id },
+    );
+    return NextResponse.json({ error: 'Failed to update inventory item' }, { status: 500 });
   }
 }

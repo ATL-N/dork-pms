@@ -107,13 +107,14 @@ export async function POST(request, { params }) {
         }
 
         const data = await request.json();
-        const { flockId, taskType, taskName, method, notes, inventoryItemId, quantityUsed, status, completedDate } = data;
+        const { id, flockId, taskType, taskName, method, notes, inventoryItemId, quantityUsed, status, completedDate, scheduledDate, durationInDays } = data;
 
         if (!flockId || !taskType || !taskName) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const taskData = {
+            id, // Use client-generated ID
             flockId,
             taskType,
             taskName,
@@ -121,7 +122,8 @@ export async function POST(request, { params }) {
             notes,
             status,
             completedDate: completedDate ? new Date(completedDate) : null,
-            scheduledDate: new Date(), // For ad-hoc tasks, scheduled is now
+            scheduledDate: scheduledDate ? new Date(scheduledDate) : new Date(),
+            durationInDays,
         };
 
         const result = await prisma.$transaction(async (tx) => {
@@ -152,22 +154,20 @@ export async function POST(request, { params }) {
             return await tx.healthTask.create({ data: taskData });
         });
 
-        await log({
-            level: "INFO",
-            message: `User ${user.email} recorded new health event '${taskName}' for flock ${flockId}.`,
-            userId: user.id,
-            meta: { farmId, flockId, healthTaskId: result.id },
-        });
+        await log(
+            "INFO",
+            `User ${user.email} recorded new health event '${taskName}' for flock ${flockId}.`,
+            { farmId, flockId, healthTaskId: result.id, userId: user.id }
+        );
 
         return NextResponse.json(result, { status: 201 });
 
     } catch (error) {
-        await log({
-            level: "ERROR",
-            message: `Failed to record health event for farm ${farmId}. Error: ${error.message}`,
-            userId: user.id,
-            meta: { farmId, stack: error.stack },
-        });
+        await log(
+            "ERROR",
+            `Failed to record health event for farm ${farmId}. Error: ${error.message}`,
+            { farmId, stack: error.stack, userId: user.id }
+        );
         return NextResponse.json({ error: error.message || 'Failed to record health event' }, { status: 500 });
     }
 }

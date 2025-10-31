@@ -12,6 +12,43 @@ const growthRecordSchema = z.object({
   weight: z.number().positive('Weight must be a positive number'),
 });
 
+export async function GET(request, { params }) {
+  try {
+    const currentUser = await getCurrentUser(request);
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { farmId, flockId } = await params;
+
+    // Verify user has access to this farm
+    const farmUser = await prisma.farmUser.findFirst({
+      where: {
+        farmId,
+        userId: currentUser.id,
+      },
+    });
+
+    if (!farmUser) {
+      return NextResponse.json({ error: 'You do not have permission to view this flock.' }, { status: 403 });
+    }
+
+    const growthRecords = await prisma.growthRecord.findMany({
+      where: {
+        flockId,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    return NextResponse.json(growthRecords, { status: 200 });
+  } catch (error) {
+    console.error('Failed to fetch growth records:', error);
+    return NextResponse.json({ error: 'Failed to fetch growth records' }, { status: 500 });
+  }
+}
+
 export async function POST(request, { params }) {
   try {
     const currentUser = await getCurrentUser(request);
@@ -46,7 +83,8 @@ export async function POST(request, { params }) {
       data: {
         date,
         weight,
-        flockId,
+        flock: { connect: { id: flockId } },
+        recordedBy: { connect: { id: currentUser.id } },
       },
     });
     

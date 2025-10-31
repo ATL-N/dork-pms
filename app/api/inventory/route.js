@@ -55,14 +55,15 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { farmId, name, category, currentStock, unit, minThreshold, supplier } = body;
+    const { id, farmId, name, category, currentStock, unit, minThreshold, supplier, price } = body;
 
-    if (!farmId || !name || !category || currentStock === undefined || !unit) {
+    if (!id || !farmId || !name || !category || currentStock === undefined || !unit) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const newItem = await prisma.inventoryItem.create({
       data: {
+        id, // Use client-generated ID
         farmId,
         name,
         category,
@@ -70,25 +71,24 @@ export async function POST(request) {
         unit,
         minThreshold: minThreshold ? parseFloat(minThreshold) : null,
         supplier,
+        price: price ? parseFloat(price) : null,
       },
     });
     
-    await log({
-      level: 'info',
-      message: `User ${user.id} created inventory item "${name}" for farm ${farmId}`,
-      userId: user.id,
-      meta: { farmId, itemId: newItem.id },
-    });
+    await log(
+      'info',
+      `User ${user.id} created inventory item "${name}" for farm ${farmId}`,
+      { farmId, itemId: newItem.id, userId: user.id },
+    );
 
     return NextResponse.json(newItem, { status: 201 });
   } catch (error) {
     console.error('Error creating inventory item:', error);
-    await log({
-        level: 'error',
-        message: `Error creating inventory item for user ${user.id}: ${error.message}`,
-        userId: user.id,
-        meta: { stack: error.stack },
-    });
+    await log(
+        'error',
+        `Error creating inventory item for user ${user.id}: ${error.message}`,
+        { stack: error.stack, userId: user.id },
+    );
     return NextResponse.json({ error: 'Failed to create inventory item' }, { status: 500 });
   }
 }

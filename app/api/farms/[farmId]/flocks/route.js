@@ -93,6 +93,9 @@ export async function POST(request, { params }) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const source = searchParams.get('source');
+
     // Transaction to create flock and its health tasks together
     const newFlock = await prisma.$transaction(async (tx) => {
       const flock = await tx.flock.create({
@@ -110,26 +113,29 @@ export async function POST(request, { params }) {
         },
       });
 
-      // Now, generate the health tasks
-      const templates = await tx.healthScheduleTemplate.findMany({
-        where: { birdType: type },
-      });
-
-      if (templates.length > 0) {
-        const healthTasks = templates.map((template) => ({
-          flockId: flock.id,
-          taskName: template.taskName,
-          taskType: template.taskType,
-          method: template.method,
-          scheduledDate: addDays(new Date(startDate), template.day),
-          durationInDays: template.durationInDays,
-          status: "SCHEDULED",
-          notes: template.notes || "",
-        }));
-
-        await tx.healthTask.createMany({
-          data: healthTasks,
+      // Only generate health tasks if the request is not from mobile
+      if (source !== 'mobile') {
+        // Now, generate the health tasks
+        const templates = await tx.healthScheduleTemplate.findMany({
+          where: { birdType: type },
         });
+
+        if (templates.length > 0) {
+          const healthTasks = templates.map((template) => ({
+            flockId: flock.id,
+            taskName: template.taskName,
+            taskType: template.taskType,
+            method: template.method,
+            scheduledDate: addDays(new Date(startDate), template.day),
+            durationInDays: template.durationInDays,
+            status: "SCHEDULED",
+            notes: template.notes || "",
+          }));
+
+          await tx.healthTask.createMany({
+            data: healthTasks,
+          });
+        }
       }
 
       return flock;

@@ -525,7 +525,6 @@ model FeedItem {
   updatedAt     DateTime @updatedAt
 
   farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  consumptions  FeedConsumption[]
   formulationIngredients FormulationIngredient[]
 
   @@index([farmId])
@@ -541,7 +540,7 @@ model FeedConsumption {
   recordedById String
 
   flock       Flock    @relation(fields: [flockId], references: [id])
-  feedItem    FeedItem @relation(fields: [feedItemId], references: [id])
+  feedItem    InventoryItem @relation(fields: [feedItemId], references: [id])
   recordedBy  User     @relation(fields: [recordedById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -581,6 +580,7 @@ model InventoryItem {
   currentStock  Float
   unit          String
   minThreshold  Float?
+  price         Float?
   supplier      String?
   status        String   @default("active") // e.g., active, archived
   farmId        String
@@ -590,6 +590,7 @@ model InventoryItem {
   farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   healthTasks   HealthTask[]
   dailyTaskRecords DailyTaskRecord[]
+  feedConsumptions FeedConsumption[]
 
   @@index([farmId])
 }
@@ -704,7 +705,7 @@ model EggSale {
 model DailyTaskRecord {
   id              String    @id @default(cuid())
   date            DateTime  // The specific day this record is for
-  status          String    // PENDING, COMPLETED
+  status          String    // PENDING, COMPLETED, SKIPPED
   notes           String?
   quantityUsed    Float?
   createdAt       DateTime  @default(now())

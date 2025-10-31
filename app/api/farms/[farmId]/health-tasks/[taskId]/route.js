@@ -79,22 +79,20 @@ export async function PUT(request, { params }) {
             return updatedTask;
         });
 
-        await logAction({
-            level: "INFO",
-            message: `User ${user.email} completed health task '${result.taskName}' for farm ${farmId}.`,
-            userId: user.id,
-            meta: { farmId, taskId: result.id },
-        });
+        await logAction(
+            "INFO",
+            `User ${user.email} completed health task '${result.taskName}' for farm ${farmId}.`,
+            { farmId, taskId: result.id, userId: user.id }
+        );
 
         return NextResponse.json(result, { status: 200 });
 
     } catch (error) {
-        await logAction({
-            level: "ERROR",
-            message: `Failed to update health task ${taskId} for farm ${farmId}. Error: ${error.message}`,
-            userId: user.id,
-            meta: { farmId, taskId, stack: error.stack },
-        });
+        await logAction(
+            "ERROR",
+            `Failed to update health task ${taskId} for farm ${farmId}. Error: ${error.message}`,
+            { farmId, taskId, stack: error.stack, userId: user.id }
+        );
         return NextResponse.json({ error: error.message || 'Failed to update health task' }, { status: 500 });
     }
 }

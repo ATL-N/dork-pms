@@ -34,10 +34,6 @@ npm prune --production
 # Unset the password variable for security
 unset PGPASSWORD
 
-# 5. Start the websocket server in the background
-echo "Starting websocket server..."
-node socket-server.js &
-
 # 6. Start the Next.js application
 echo "Starting Next.js application..."
 npm start

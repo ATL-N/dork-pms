@@ -32,14 +32,18 @@ else
   npx prisma db seed
 fi
 
+# 4. Prune development dependencies to reduce image size
+echo "Pruning development dependencies..."
+npm prune --production
+
 # Unset the password variable for security
 unset PGPASSWORD
 
-# 4. Start the websocket server in the background
+# 5. Start the websocket server in the background
 echo "Starting websocket server..."
 node socket-server.js &
 
-# 5. Start the Next.js application
+# 6. Start the Next.js application
 echo "Starting Next.js application..."
 npm start
 

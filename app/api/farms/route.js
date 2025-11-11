@@ -64,7 +64,9 @@ export async function POST(request) {
         id: tempId,
         name,
         location,
-        ownerId: user.id,
+        owner: {
+          connect: { id: user.id },
+        },
         users: {
           create: {
             userId: user.id,

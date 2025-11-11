@@ -7,7 +7,10 @@ import { useRouter } from 'next/navigation';
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [farmName, setFarmName] = useState('');
+  const [farmLocation, setFarmLocation] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
@@ -20,7 +23,7 @@ export default function SignUpPage() {
       const response = await fetch('/api/auth/register-owner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({ email, name, password, phoneNumber, farmName, farmLocation }),
       });
 
       if (!response.ok) {
@@ -89,6 +92,20 @@ export default function SignUpPage() {
             />
           </div>
           <div>
+            <label htmlFor="phoneNumber" className="text-sm font-medium">
+              Phone Number
+            </label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              required
+              className="w-full px-3 py-2 mt-1 input"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          </div>
+          <div>
             <label htmlFor="password" className="text-sm font-medium">
               Password
             </label>
@@ -101,6 +118,34 @@ export default function SignUpPage() {
               className="w-full px-3 py-2 mt-1 input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="farmName" className="text-sm font-medium">
+              Farm Name
+            </label>
+            <input
+              id="farmName"
+              name="farmName"
+              type="text"
+              required
+              className="w-full px-3 py-2 mt-1 input"
+              value={farmName}
+              onChange={(e) => setFarmName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="farmLocation" className="text-sm font-medium">
+              Farm Location
+            </label>
+            <input
+              id="farmLocation"
+              name="farmLocation"
+              type="text"
+              required
+              className="w-full px-3 py-2 mt-1 input"
+              value={farmLocation}
+              onChange={(e) => setFarmLocation(e.target.value)}
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}

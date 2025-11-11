@@ -63,17 +63,17 @@ export async function GET(req, {params}) {
   }
 }
 
-export async function PUT(request, context) {
-    const { params } = routeContextSchema.parse(context);
-    const { farmId, flockId } = params;
+export async function PUT(request, {params}) {
+    // const { params } = routeContextSchema.parse(context);
+    const { farmId, flockId } = await params;
     const currentUser = await getCurrentUser(request);
     if (!currentUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const { params } = routeContextSchema.parse(context);
-        const { farmId, flockId } = params;
+        // const { params } = routeContextSchema.parse(context);
+        // const { farmId, flockId } = params;
         
         const farm = await prisma.farm.findUnique({ where: { id: farmId } });
         const farmUser = await prisma.farmUser.findFirst({ where: { farmId: farmId, userId: currentUser.id, role: { in: ['OWNER', 'MANAGER'] } } });
@@ -84,6 +84,10 @@ export async function PUT(request, context) {
         }
 
         const body = await request.json();
+
+        if (body.startDate) {
+            body.startDate = new Date(body.startDate);
+        }
         
         const updatedFlock = await prisma.flock.update({
             where: {

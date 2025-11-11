@@ -1,9 +1,9 @@
 // app/api/chat/messages/[messageId]/route.js
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/session';
 
-const prisma = new PrismaClient();
+
 
 export async function DELETE(request, { params }) {
     const user = await getCurrentUser(request);

@@ -65,6 +65,8 @@ export async function POST(request, { params }) {
     }
 
     const { date, weight } = validation.data;
+    const { id, recordedById } = body; // Extract id from the original body
+
 
     // Verify user has access to this farm
     const farmUser = await prisma.farmUser.findFirst({
@@ -81,10 +83,11 @@ export async function POST(request, { params }) {
 
     const newGrowthRecord = await prisma.growthRecord.create({
       data: {
+        id: id, // Use the provided id
         date,
         weight,
         flock: { connect: { id: flockId } },
-        recordedBy: { connect: { id: currentUser.id } },
+        recordedBy: { connect: { id: recordedById || currentUser.id } },
       },
     });
     

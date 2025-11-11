@@ -105,6 +105,7 @@ export async function POST(request, { params }) {
 
     const newRecord = await prisma.eggProductionRecord.create({
       data: {
+        id: body.id, // Use the ID from the request body
         flockId,
         date: date ? new Date(date) : new Date(),
         totalEggs: parseInt(totalEggs, 10),

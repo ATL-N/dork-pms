@@ -94,106 +94,106 @@ enum TransactionType {
   REVENUE
 }
 
-
-
 // CORE MODELS
 
 model Farm {
-  id          String @id @default(cuid())
-  name        String
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  ownerId     String
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ownerId   String
 
-  owner       User     @relation("FarmOwner", fields: [ownerId], references: [id])
-  users       FarmUser[]
-  flocks      Flock[]
-  feedItems   FeedItem[]
-  inventory   InventoryItem[]
-  transactions Transaction[]
-  invoices    Invoice[]
-  eggSales    EggSale[]
-  formulations FeedFormulation[]
-  tasks       Task[]
-  veterinarians VetFarmAccess[]
-  vetAccessRequests VetAccessRequest[]
-  invitations Invitation[]
+  owner               User                 @relation("FarmOwner", fields: [ownerId], references: [id])
+  users               FarmUser[]
+  flocks              Flock[]
+  feedItems           FeedItem[]
+  inventory           InventoryItem[]
+  transactions        Transaction[]
+  invoices            Invoice[]
+  eggSales            EggSale[]
+  formulations        FeedFormulation[]
+  tasks               Task[]
+  veterinarians       VetFarmAccess[]
+  vetAccessRequests   VetAccessRequest[]
+  invitations         Invitation[]
   customTaskSchedules CustomTaskSchedule[]
-  useCustomSchedule Boolean @default(false)
+  useCustomSchedule   Boolean              @default(false)
 
   @@index([name])
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  userType      UserType  @default(FARMER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String?              @unique
+  phoneNumber         String?              @unique
+  emailVerified       DateTime?
+  image               String?
+  passwordHash        String?
+  userType            UserType             @default(FARMER)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
   ownerApprovalStatus OwnerApprovalStatus?
-  fcmToken      String?
+  fcmToken            String?
 
-  ownedFarms    Farm[]           @relation("FarmOwner")
-  accounts      Account[]
-  sessions      Session[]
-  subscription  Subscription?
+  ownedFarms   Farm[]        @relation("FarmOwner")
+  accounts     Account[]
+  sessions     Session[]
+  subscription Subscription?
 
-  farms         FarmUser[]
-  profile       UserProfile?
-  vetProfile    VeterinarianProfile?
-  tasksAssigned Task[]
+  farms                   FarmUser[]
+  profile                 UserProfile?
+  vetProfile              VeterinarianProfile?
+  tasksAssigned           Task[]
   feedConsumptionRecorded FeedConsumption[]
-  formulationsCreated FeedFormulation[]
-  sentMessages  Message[] @relation("sentMessages")
-  conversations ConversationParticipant[]
-  pinnedConversations PinnedConversation[]
-  ratingsGiven  VeterinarianRating[] @relation("ratedBy")
-  ratingsReceived VeterinarianRating[] @relation("ratedVeterinarian")
-  consultsFor   VetFarmAccess[] @relation("VetConsults")
-  vetAccessRequests VetAccessRequest[]
-  readReceipts  ReadReceipt[]
-  logs          Log[]
-  recordedBirdResales BirdResale[]
-  recordedEggSales EggSale[]
-  eggProductionRecords EggProductionRecord[]
-  mortalityRecords     MortalityRecord[]
-  growthRecords        GrowthRecord[]
+  formulationsCreated     FeedFormulation[]
+  sentMessages            Message[]                 @relation("sentMessages")
+  conversations           ConversationParticipant[]
+  pinnedConversations     PinnedConversation[]
+  ratingsGiven            VeterinarianRating[]      @relation("ratedBy")
+  ratingsReceived         VeterinarianRating[]      @relation("ratedVeterinarian")
+  consultsFor             VetFarmAccess[]           @relation("VetConsults")
+  vetAccessRequests       VetAccessRequest[]
+  readReceipts            ReadReceipt[]
+  logs                    Log[]
+  recordedBirdResales     BirdResale[]
+  recordedEggSales        EggSale[]
+  eggProductionRecords    EggProductionRecord[]
+  mortalityRecords        MortalityRecord[]
+  growthRecords           GrowthRecord[]
+  PasswordResetToken      PasswordResetToken[]
 }
 
 model CustomTaskSchedule {
-  id        String   @id @default(cuid())
-  farmId    String
-  taskName  String
-  taskType  String // e.g., "Feeding", "Egg Collection"
-  times     String[] // e.g., ["06:00", "18:00"]
-  applyToAllFarms Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  farmId          String
+  taskName        String
+  taskType        String // e.g., "Feeding", "Egg Collection"
+  times           String[] // e.g., ["06:00", "18:00"]
+  applyToAllFarms Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@unique([farmId, taskName])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -216,26 +216,34 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  token   String   @unique
+  expires DateTime
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Subscription {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  plan        SubscriptionPlan @default(FREE)
-  farmLimit   Int
-  startDate   DateTime @default(now())
-  endDate     DateTime?
-  status      String   @default("ACTIVE") // e.g., ACTIVE, CANCELED
+  id        String           @id @default(cuid())
+  userId    String           @unique
+  plan      SubscriptionPlan @default(FREE)
+  farmLimit Int
+  startDate DateTime         @default(now())
+  endDate   DateTime?
+  status    String           @default("ACTIVE") // e.g., ACTIVE, CANCELED
 
   user User @relation(fields: [userId], references: [id])
 }
 
 model FarmUser {
-  farmId    String
-  userId    String
-  role      Role     @default(WORKER)
+  farmId     String
+  userId     String
+  role       Role     @default(WORKER)
   assignedAt DateTime @default(now())
 
-  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([farmId, userId])
 }
@@ -255,11 +263,11 @@ model VetFarmAccess {
 }
 
 model VetAccessRequest {
-  id             String   @id @default(cuid())
+  id             String           @id @default(cuid())
   farmId         String
   veterinarianId String
   status         VetRequestStatus @default(PENDING)
-  requestedAt    DateTime @default(now())
+  requestedAt    DateTime         @default(now())
 
   farm         Farm @relation(fields: [farmId], references: [id])
   veterinarian User @relation(fields: [veterinarianId], references: [id])
@@ -281,7 +289,7 @@ model Invitation {
 }
 
 model UserProfile {
-  userId      String @id
+  userId      String    @id
   contact     String?
   hireDate    DateTime?
   salary      Float?
@@ -290,7 +298,7 @@ model UserProfile {
   country     String?
   currency    String?
 
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum VetApprovalStatus {
@@ -300,39 +308,39 @@ enum VetApprovalStatus {
 }
 
 model VeterinarianProfile {
-  userId          String  @id
-  specialization  String?
-  licenseNumber   String? @unique
-  isVerified      Boolean @default(false) // This can mean "approved by admin"
-  approvalStatus  VetApprovalStatus @default(PENDING)
-  yearsExperience Int?
+  userId           String            @id
+  specialization   String?
+  licenseNumber    String?           @unique
+  isVerified       Boolean           @default(false) // This can mean "approved by admin"
+  approvalStatus   VetApprovalStatus @default(PENDING)
+  yearsExperience  Int?
   qualificationUrl String? // URL to the uploaded certificate/document
-  averageRating   Float   @default(0)
-  ratingCount     Int     @default(0)
+  averageRating    Float             @default(0)
+  ratingCount      Int               @default(0)
 
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VeterinarianRating {
-  id              String   @id @default(cuid())
-  rating          Int
-  comment         String?
-  createdAt       DateTime @default(now())
-  raterId         String
-  veterinarianId  String
+  id             String   @id @default(cuid())
+  rating         Int
+  comment        String?
+  createdAt      DateTime @default(now())
+  raterId        String
+  veterinarianId String
 
-  rater           User     @relation("ratedBy", fields: [raterId], references: [id])
-  veterinarian    User     @relation("ratedVeterinarian", fields: [veterinarianId], references: [id])
+  rater        User @relation("ratedBy", fields: [raterId], references: [id])
+  veterinarian User @relation("ratedVeterinarian", fields: [veterinarianId], references: [id])
 }
 
 // CHAT MODELS
 
 model Conversation {
-  id          String   @id @default(cuid())
-  name        String? // For group chats
-  isGroup     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String? // For group chats
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   participants ConversationParticipant[]
   messages     Message[]
@@ -344,8 +352,8 @@ model PinnedConversation {
   conversationId String
   pinnedAt       DateTime @default(now())
 
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@id([userId, conversationId])
 }
@@ -353,32 +361,32 @@ model PinnedConversation {
 model ConversationParticipant {
   conversationId String
   userId         String
-  isHidden       Boolean  @default(false)
+  isHidden       Boolean @default(false)
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([conversationId, userId])
 }
 
 model Message {
-  id              String   @id @default(cuid())
-  content         String
-  mediaUrl        String?
-  mediaType       String?
-  createdAt       DateTime @default(now())
-  deletedAt       DateTime?
-  conversationId  String
-  senderId        String
-  isPinned        Boolean  @default(false)
+  id             String    @id @default(cuid())
+  content        String
+  mediaUrl       String?
+  mediaType      String?
+  createdAt      DateTime  @default(now())
+  deletedAt      DateTime?
+  conversationId String
+  senderId       String
+  isPinned       Boolean   @default(false)
 
-  repliedToId     String?
-  repliedTo       Message? @relation("Replies", fields: [repliedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies         Message[] @relation("Replies")
+  repliedToId String?
+  repliedTo   Message?  @relation("Replies", fields: [repliedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     Message[] @relation("Replies")
 
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender          User         @relation("sentMessages", fields: [senderId], references: [id])
-  readReceipts    ReadReceipt[]
+  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User          @relation("sentMessages", fields: [senderId], references: [id])
+  readReceipts ReadReceipt[]
 }
 
 model ReadReceipt {
@@ -387,8 +395,8 @@ model ReadReceipt {
   userId    String
   readAt    DateTime @default(now())
 
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
 }
@@ -409,7 +417,7 @@ model HealthScheduleTemplate {
 }
 
 model Flock {
-  id              String @id @default(cuid())
+  id              String    @id @default(cuid())
   name            String
   type            FlockType
   breed           String
@@ -417,46 +425,46 @@ model Flock {
   initialQuantity Int
   location        String?
   startDate       DateTime
-  status          String     @default("active") // e.g., active, archived
-  costPerBird     Float?     // Cost per bird at the time of acquisition
+  status          String    @default("active") // e.g., active, archived
+  costPerBird     Float? // Cost per bird at the time of acquisition
   firstEggDate    DateTime?
   farmId          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
-  farm     Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  
-  growthRecords GrowthRecord[]
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  growthRecords        GrowthRecord[]
   eggProductionRecords EggProductionRecord[]
-  mortalityRecords MortalityRecord[]
-  feedConsumption FeedConsumption[]
-  birdResales     BirdResale[]
-  healthTasks     HealthTask[]
-  tasks           Task[]
+  mortalityRecords     MortalityRecord[]
+  feedConsumption      FeedConsumption[]
+  birdResales          BirdResale[]
+  healthTasks          HealthTask[]
+  tasks                Task[]
 
   @@index([farmId])
 }
 
 model HealthTask {
-  id              String   @id @default(cuid())
-  flockId         String
-  taskName        String
-  taskType        String   // "Vaccination", "Medication", etc.
-  method          String   // "Drinking Water", "Injection"
-  scheduledDate   DateTime
-  durationInDays  Int      @default(1)
-  completedDate   DateTime?
-  status          ScheduleStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, MISSED
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String         @id @default(cuid())
+  flockId        String
+  taskName       String
+  taskType       String // "Vaccination", "Medication", etc.
+  method         String // "Drinking Water", "Injection"
+  scheduledDate  DateTime
+  durationInDays Int            @default(1)
+  completedDate  DateTime?
+  status         ScheduleStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, MISSED
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   inventoryItemId String?
   quantityUsed    Float?
 
-  flock           Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
-  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
-  dailyRecords    DailyTaskRecord[]
+  flock         Flock             @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem?    @relation(fields: [inventoryItemId], references: [id])
+  dailyRecords  DailyTaskRecord[]
 
   @@index([flockId, scheduledDate])
 }
@@ -474,20 +482,19 @@ model GrowthRecord {
   recordedBy User  @relation(fields: [recordedById], references: [id])
 }
 
-
 model EggProductionRecord {
-  id              String   @id @default(cuid())
-  date            DateTime
-  totalEggs       Int
-  brokenEggs      Int
-  averageWeight   Float?
-  flockId         String
-  recordedById    String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  date          DateTime
+  totalEggs     Int
+  brokenEggs    Int
+  averageWeight Float?
+  flockId       String
+  recordedById  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  flock           Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
-  recordedBy      User     @relation(fields: [recordedById], references: [id])
+  flock      Flock @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  recordedBy User  @relation(fields: [recordedById], references: [id])
 
   @@index([flockId, date])
 }
@@ -506,89 +513,88 @@ model MortalityRecord {
   recordedBy User  @relation(fields: [recordedById], references: [id])
 }
 
-
 model FeedItem {
-  id            String   @id @default(cuid())
-  name          String
-  type          FeedType
-  category      String?
-  supplier      String?
-  quantity      Float
-  unit          String
-  unitPrice     Float
-  purchaseDate  DateTime
-  expiryDate    DateTime?
-  location      String?
-  batchNumber   String?
-  farmId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  type         FeedType
+  category     String?
+  supplier     String?
+  quantity     Float
+  unit         String
+  unitPrice    Float
+  purchaseDate DateTime
+  expiryDate   DateTime?
+  location     String?
+  batchNumber  String?
+  farmId       String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm                   Farm                    @relation(fields: [farmId], references: [id], onDelete: Cascade)
   formulationIngredients FormulationIngredient[]
 
   @@index([farmId])
 }
 
 model FeedConsumption {
-  id          String   @id @default(cuid())
-  date        DateTime @default(now())
-  quantity    Float
-  notes       String?
-  flockId     String
-  feedItemId  String
+  id           String   @id @default(cuid())
+  date         DateTime @default(now())
+  quantity     Float
+  notes        String?
+  flockId      String
+  feedItemId   String
   recordedById String
 
-  flock       Flock    @relation(fields: [flockId], references: [id])
-  feedItem    InventoryItem @relation(fields: [feedItemId], references: [id])
-  recordedBy  User     @relation(fields: [recordedById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  flock      Flock         @relation(fields: [flockId], references: [id])
+  feedItem   InventoryItem @relation(fields: [feedItemId], references: [id])
+  recordedBy User          @relation(fields: [recordedById], references: [id])
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 }
 
 model FeedFormulation {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  farmId        String
-  createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  farmId      String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  farm          Farm     @relation(fields: [farmId], references: [id])
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  ingredients   FormulationIngredient[]
+  farm        Farm                    @relation(fields: [farmId], references: [id])
+  createdBy   User                    @relation(fields: [createdById], references: [id])
+  ingredients FormulationIngredient[]
 
   @@index([farmId])
 }
 
 model FormulationIngredient {
-  id              String @id @default(cuid())
-  percentage      Float
-  quantity        Float
-  formulationId   String
-  feedItemId      String
+  id            String @id @default(cuid())
+  percentage    Float
+  quantity      Float
+  formulationId String
+  feedItemId    String
 
-  formulation     FeedFormulation @relation(fields: [formulationId], references: [id], onDelete: Cascade)
-  feedItem        FeedItem        @relation(fields: [feedItemId], references: [id])
+  formulation FeedFormulation @relation(fields: [formulationId], references: [id], onDelete: Cascade)
+  feedItem    FeedItem        @relation(fields: [feedItemId], references: [id])
 }
 
 model InventoryItem {
-  id            String   @id @default(cuid())
-  name          String
-  category      String // e.g., medication, supplies
-  currentStock  Float
-  unit          String
-  minThreshold  Float?
-  price         Float?
-  supplier      String?
-  status        String   @default("active") // e.g., active, archived
-  farmId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  category     String // e.g., medication, supplies
+  currentStock Float
+  unit         String
+  minThreshold Float?
+  price        Float?
+  supplier     String?
+  status       String   @default("active") // e.g., active, archived
+  farmId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
 
-  farm          Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  healthTasks   HealthTask[]
+  farm             Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  healthTasks      HealthTask[]
   dailyTaskRecords DailyTaskRecord[]
   feedConsumptions FeedConsumption[]
 
@@ -596,7 +602,7 @@ model InventoryItem {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   date        DateTime
   type        TransactionType
   category    String
@@ -605,11 +611,11 @@ model Transaction {
   vendor      String?
   customer    String?
   farmId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-  
-  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  eggSale     EggSale?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @updatedAt
+
+  farm    Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  eggSale EggSale?
 }
 
 model Invoice {
@@ -630,20 +636,20 @@ model Invoice {
 }
 
 model Task {
-  id            String      @id @default(cuid())
-  title         String
-  description   String?
-  dueDate       DateTime
-  status        TaskStatus  @default(PENDING)
-  farmId        String
-  flockId       String
-  assignedToId  String?
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime
+  status       TaskStatus @default(PENDING)
+  farmId       String
+  flockId      String
+  assignedToId String?
 
-  farm          Farm        @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  flock         Flock       @relation(fields: [flockId], references: [id], onDelete: Cascade)
-  assignedTo    User?       @relation(fields: [assignedToId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  farm       Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  flock      Flock    @relation(fields: [flockId], references: [id], onDelete: Cascade)
+  assignedTo User?    @relation(fields: [assignedToId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([farmId, flockId, dueDate])
 }
@@ -670,7 +676,7 @@ model Log {
   timestamp DateTime @default(now())
   userId    String?
 
-  user      User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 }
 
 model BirdResale {
@@ -682,41 +688,41 @@ model BirdResale {
   notes        String?
   recordedById String
 
-  flock        Flock    @relation(fields: [flockId], references: [id])
-  recordedBy   User     @relation(fields: [recordedById], references: [id])
+  flock      Flock @relation(fields: [flockId], references: [id])
+  recordedBy User  @relation(fields: [recordedById], references: [id])
 }
 
 model EggSale {
-  id           String   @id @default(cuid())
-  farmId       String
-  quantity     Int
-  amount       Float
-  date         DateTime
-  customer     String?
-  notes        String?
-  recordedById String
-  transactionId String? @unique
+  id            String   @id @default(cuid())
+  farmId        String
+  quantity      Int
+  amount        Float
+  date          DateTime
+  customer      String?
+  notes         String?
+  recordedById  String
+  transactionId String?  @unique
 
-  farm         Farm     @relation(fields: [farmId], references: [id])
-  recordedBy   User     @relation(fields: [recordedById], references: [id])
-  transaction  Transaction? @relation(fields: [transactionId], references: [id])
+  farm        Farm         @relation(fields: [farmId], references: [id])
+  recordedBy  User         @relation(fields: [recordedById], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
 }
 
 model DailyTaskRecord {
-  id              String    @id @default(cuid())
-  date            DateTime  // The specific day this record is for
-  status          String    // PENDING, COMPLETED, SKIPPED
-  notes           String?
-  quantityUsed    Float?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  date         DateTime // The specific day this record is for
+  status       String // PENDING, COMPLETED, SKIPPED
+  notes        String?
+  quantityUsed Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  healthTaskId    String
-  healthTask      HealthTask @relation(fields: [healthTaskId], references: [id], onDelete: Cascade)
+  healthTaskId String
+  healthTask   HealthTask @relation(fields: [healthTaskId], references: [id], onDelete: Cascade)
 
   inventoryItemId String?
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
 
-  @@index([healthTaskId])
   @@unique([healthTaskId, date])
+  @@index([healthTaskId])
 }

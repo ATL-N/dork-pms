@@ -1,9 +1,6 @@
 // app/api/health-templates/route.js
-import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-// import { getCurrentUser } from "@/app/lib/session";
-
-const prisma = new PrismaClient();
+import prisma from '@/app/lib/prisma';
+import { NextResponse } from 'next/server';
 
 /**
  * @swagger

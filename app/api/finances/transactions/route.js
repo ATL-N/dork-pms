@@ -74,14 +74,15 @@ export async function POST(request) {
 
     try {
         const body = await request.json();
-        const { farmId, type, category, amount, description, vendor, customer, date } = body;
+        const { id, farmId, type, category, amount, description, vendor, customer, date } = body;
 
-        if (!farmId || !type || !category || !amount || !date) {
+        if (!id || !farmId || !type || !category || !amount || !date) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const newTransaction = await prisma.transaction.create({
             data: {
+                id, // Use the client-generated ID
                 farmId,
                 type,
                 category,
@@ -93,27 +94,26 @@ export async function POST(request) {
             },
         });
         
-        await createLog({
-            userId: currentUser.id,
-            level: 'INFO',
-            message: `User ${currentUser.email} created a new ${type.toLowerCase()} transaction of ${amount} in farm ${farmId}.`,
-            meta: {
+        await createLog(
+            'INFO',
+            `User ${currentUser.email} created a new ${type.toLowerCase()} transaction of ${amount} in farm ${farmId}.`,
+            {
+                userId: currentUser.id,
                 farmId,
                 transactionId: newTransaction.id,
                 type,
                 amount,
             }
-        });
+        );
 
         return NextResponse.json(newTransaction, { status: 201 });
     } catch (error) {
         console.error(`Error creating transaction:`, error);
-        await createLog({
-            userId: currentUser.id,
-            level: 'ERROR',
-            message: `Failed to create transaction for user ${currentUser.email}.`,
-            meta: { error: error.message }
-        });
+        await createLog(
+            'ERROR',
+            `Failed to create transaction for user ${currentUser.email}.`,
+            { userId: currentUser.id, error: error.message }
+        );
         return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
     }
 }

@@ -7,7 +7,7 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
-    const { farmId, taskId } = await params;
+    const { farmId, taskId } =await  params;
     const user = await getCurrentUser(request);
 
     if (!user) {
@@ -30,20 +30,9 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: 'Invalid status update.' }, { status: 400 });
         }
 
-        const result = await prisma.$transaction(async (tx) => {
-            const taskToUpdate = await tx.healthTask.findUnique({
-                where: { id: taskId },
-            });
-
-            if (!taskToUpdate) {
-                throw new Error('Health task not found.');
-            }
-            
-            if (taskToUpdate.status === 'COMPLETED') {
-                throw new Error('Task is already completed.');
-            }
-
-            if (inventoryItemId && quantityUsed > 0) {
+        // 1. Handle inventory update if applicable
+        if (inventoryItemId && quantityUsed != null && parseFloat(quantityUsed) > 0) {
+            await prisma.$transaction(async (tx) => {
                 const inventoryItem = await tx.inventoryItem.findUnique({
                     where: { id: inventoryItemId },
                 });
@@ -51,7 +40,7 @@ export async function PUT(request, { params }) {
                 if (!inventoryItem) {
                     throw new Error('Inventory item not found.');
                 }
-                if (inventoryItem.currentStock < quantityUsed) {
+                if (inventoryItem.currentStock < parseFloat(quantityUsed)) {
                     throw new Error(`Not enough stock for ${inventoryItem.name}.`);
                 }
 
@@ -63,31 +52,31 @@ export async function PUT(request, { params }) {
                         },
                     },
                 });
-            }
-
-            const updatedTask = await tx.healthTask.update({
-                where: { id: taskId },
-                data: {
-                    status: 'COMPLETED',
-                    completedDate: new Date(),
-                    inventoryItemId,
-                    quantityUsed: parseFloat(quantityUsed),
-                    notes,
-                },
             });
+        }
 
-            return updatedTask;
+        // 2. Update the health task
+        const updatedTask = await prisma.healthTask.update({
+            where: { id: taskId },
+            data: {
+                status: 'COMPLETED',
+                completedDate: new Date(),
+                inventoryItemId: inventoryItemId,
+                quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
+                notes: notes,
+            },
         });
 
         await logAction(
             "INFO",
-            `User ${user.email} completed health task '${result.taskName}' for farm ${farmId}.`,
-            { farmId, taskId: result.id, userId: user.id }
+            `User ${user.email} completed health task '${updatedTask.taskName}' for farm ${farmId}.`,
+            { farmId, taskId: updatedTask.id, userId: user.id }
         );
 
-        return NextResponse.json(result, { status: 200 });
+        return NextResponse.json(updatedTask, { status: 200 });
 
     } catch (error) {
+        console.error(`Failed to update health task ${taskId}:`, error);
         await logAction(
             "ERROR",
             `Failed to update health task ${taskId} for farm ${farmId}. Error: ${error.message}`,

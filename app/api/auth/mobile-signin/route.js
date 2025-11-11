@@ -11,12 +11,18 @@ export async function POST(request) {
     const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json({ message: 'Email/Phone and password are required' }, { status: 400 });
     }
 
-    // 1. Find the user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email },
+    // 1. Find the user by email or phone number
+    const isEmail = email.includes('@');
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: isEmail ? email : undefined },
+          { phoneNumber: !isEmail ? email : undefined },
+        ],
+      },
     });
 
     if (!user || !user.passwordHash) {

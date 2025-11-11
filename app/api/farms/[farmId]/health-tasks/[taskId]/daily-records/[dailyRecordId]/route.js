@@ -17,7 +17,7 @@ const routeContextSchema = z.object({
 });
 
 export async function PUT(request, { params }) {
-    const { farmId, taskId, dailyRecordId } = params;
+    const { farmId, taskId, dailyRecordId } = await params;
     try {
         console.log('[DEBUG] PUT handler started');
         console.log('[DEBUG] Params destructured successfully:', { farmId, taskId, dailyRecordId });

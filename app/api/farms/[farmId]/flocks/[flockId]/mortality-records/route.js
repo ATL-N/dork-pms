@@ -127,6 +127,7 @@ export async function POST(req, { params }) {
 
       return await prisma.mortalityRecord.create({
         data: {
+          id: body.id, // Use the ID from the request body
           flockId: flockId,
           date: recordDate,
           quantity,

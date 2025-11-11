@@ -65,9 +65,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { farmId, name, email, role } = await request.json();
+    const { farmId, name, email, password, role } = await request.json();
 
-    if (!farmId || !name || !email || !role) {
+    if (!farmId || !name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
@@ -95,9 +95,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'User is already a member of this farm' }, { status: 409 });
         }
     } else {
-        // User does not exist, create them with a temporary password
-        const tempPassword = Math.random().toString(36).slice(-8);
-        const passwordHash = await bcrypt.hash(tempPassword, 10);
+        // User does not exist, create them with the provided password
+        const passwordHash = await bcrypt.hash(password, 10);
 
         user = await prisma.user.create({
             data: {
@@ -107,11 +106,6 @@ export async function POST(request) {
                 userType: 'FARMER', // All staff are FARMER type
             },
         });
-        
-        // TODO: The temporary password needs to be communicated to the user.
-        // For now, we can return it in the response for the admin to copy.
-        // In a real app, you might email it or force a password reset on first login.
-        console.log(`Temp password for ${email}: ${tempPassword}`);
     }
 
     // Add user to the farm

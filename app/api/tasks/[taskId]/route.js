@@ -1,9 +1,5 @@
+import prisma from '@/app/lib/prisma';
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from '@/app/lib/session';
-import { log } from '@/app/lib/logging';
-
-const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
   const user = await getCurrentUser(request);

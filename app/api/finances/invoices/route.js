@@ -66,14 +66,19 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { farmId, invoiceNumber, date, dueDate, type, status, amount, customer, vendor } = body;
+    let { id, farmId, invoiceNumber, date, dueDate, type, status, amount, customer, vendor } = body;
 
     if (!farmId || !invoiceNumber || !date || !type || !status || !amount) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    if (!id) {
+        id = `inv_${Date.now()}`;
+    }
+
     const newInvoice = await prisma.invoice.create({
       data: {
+        id, // Use the client-generated ID or the new server-generated one
         farmId,
         invoiceNumber,
         date: new Date(date),

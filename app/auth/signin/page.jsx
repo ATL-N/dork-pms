@@ -35,12 +35,12 @@ export default function SignIn() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="text-sm font-medium">
-              Email address
+              Email or Phone Number
             </label>
             <input
               id="email"
               name="email"
-              type="email"
+              type="text"
               autoComplete="email"
               required
               value={email}

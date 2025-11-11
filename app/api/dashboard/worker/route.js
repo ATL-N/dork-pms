@@ -1,9 +1,6 @@
 // app/api/dashboard/worker/route.js
+import prisma from '@/app/lib/prisma';
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from '@/app/lib/session';
-
-const prisma = new PrismaClient();
 
 export async function GET(request) {
   const currentUser = await getCurrentUser(request);

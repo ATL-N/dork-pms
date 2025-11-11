@@ -7,49 +7,73 @@ import { logAction } from '@/app/lib/logging';
 
 const prisma = new PrismaClient();
 
-async function checkPermissions(recordId, user) {
+async function checkPermissions(recordId, user, farmId) {
     const record = await prisma.eggProductionRecord.findUnique({
         where: { id: recordId },
+        include: { flock: true }
     });
 
     if (!record) {
         return { authorized: false, reason: 'Record not found' };
     }
 
+    if (record.flock.farmId !== farmId) {
+        return { authorized: false, reason: 'Record does not belong to this farm' };
+    }
+
+    const farmUser = await prisma.farmUser.findFirst({
+        where: { userId: user.id, farmId: farmId }
+    });
+
+    const farm = await prisma.farm.findUnique({ where: { id: farmId } });
+    const userRole = farm?.ownerId === user.id ? 'OWNER' : farmUser?.role;
+
     const now = new Date();
     const recordDate = new Date(record.createdAt);
 
     if (user.userType === 'ADMIN') {
-        const threeDaysAgo = new Date(now.setDate(now.getDate() - 3));
-        if (recordDate < threeDaysAgo) {
-            return { authorized: false, reason: 'Admin can only edit records within 3 days.' };
+        return { authorized: true, reason: null };
+    }
+
+    if (userRole === 'OWNER') {
+        const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+        if (recordDate.getTime() < threeDaysAgo.getTime()) {
+            return { authorized: false, reason: 'Owner can only edit records within 3 days.' };
         }
-    } else { // For FARMER
+    } else if (userRole === 'MANAGER') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (recordDate.getTime() < today.getTime()) {
+            return { authorized: false, reason: 'Manager can only edit records on the same day.' };
+        }
+    } else if (userRole === 'WORKER') {
         if (record.recordedById !== user.id) {
             return { authorized: false, reason: 'You can only edit your own records.' };
         }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (recordDate < today) {
+        if (recordDate.getTime() < today.getTime()) {
             return { authorized: false, reason: 'You can only edit records on the same day they were created.' };
         }
         if (now.getHours() >= 19) {
             return { authorized: false, reason: 'Editing is not allowed after 7 PM.' };
         }
+    } else {
+        return { authorized: false, reason: 'You do not have a role on this farm.' };
     }
 
     return { authorized: true, reason: null };
 }
 
 export async function PUT(request, { params }) {
-    const { recordId } = await params;
+    const { recordId, farmId } = await params;
     const user = await getCurrentUser(request);
 
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { authorized, reason } = await checkPermissions(recordId, user);
+    const { authorized, reason } = await checkPermissions(recordId, user, farmId);
     if (!authorized) {
         return NextResponse.json({ error: `Forbidden: ${reason}` }, { status: 403 });
     }
@@ -78,14 +102,14 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const { recordId } = await params;
+    const { recordId, farmId } = await params;
     const user = await getCurrentUser(request);
 
     if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { authorized, reason } = await checkPermissions(recordId, user);
+    const { authorized, reason } = await checkPermissions(recordId, user, farmId);
     if (!authorized) {
         return NextResponse.json({ error: `Forbidden: ${reason}` }, { status: 403 });
     }

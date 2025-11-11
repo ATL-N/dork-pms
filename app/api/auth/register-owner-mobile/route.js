@@ -1,23 +1,32 @@
-
+import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from "bcrypt";
+import * as jose from 'jose';
 
 const prisma = new PrismaClient();
 
 export async function POST(request) {
   try {
-    const { email, name, password } = await request.json();
+    const { email, name, password, phoneNumber } = await request.json();
 
-    if (!email || !name || !password) {
+    if (!email || !name || !password || !phoneNumber) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUserByEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       return new Response(JSON.stringify({ error: 'User with this email already exists' }), { status: 409 });
+    }
+
+    const existingUserByPhone = await prisma.user.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (existingUserByPhone) {
+      return new Response(JSON.stringify({ error: 'User with this phone number already exists' }), { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -26,8 +35,9 @@ export async function POST(request) {
       data: {
         name,
         email,
+        phoneNumber,
         passwordHash,
-        userType: 'FARMER', // All owners are technically farmers
+        userType: 'FARMER',
         ownerApprovalStatus: 'PENDING',
       },
     });
@@ -50,9 +60,27 @@ export async function POST(request) {
       // Non-critical error, so we don't block the registration
     }
 
-    // In a real application, you would also trigger an email to the admin here.
+    const payload = {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      userType: newUser.userType,
+    };
 
-    return new Response(JSON.stringify({ message: 'Application submitted successfully' }), { status: 201 });
+    const secretString = process.env.NEXTAUTH_SECRET;
+    if (!secretString) {
+        console.error('JWT secret is not defined. Please set NEXTAUTH_SECRET in your .env file');
+        return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500 });
+    }
+    const secret = new TextEncoder().encode(secretString);
+
+    const token = await new jose.SignJWT(payload)
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('30d')
+      .sign(secret);
+
+    return NextResponse.json({ token: token }, { status: 201 });
 
   } catch (error) {
     console.error("Owner registration error:", error);

@@ -18,7 +18,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const [newTransaction, newEggSale] = await prisma.$transaction([
+        const [newTransaction, newEggSale, farmSummary] = await prisma.$transaction([
             prisma.transaction.create({
                 data: {
                     id: transactionId,
@@ -40,6 +40,14 @@ export async function POST(request) {
                     customer,
                     recordedById: currentUser.id,
                     transactionId,
+                },
+            }),
+            prisma.farmSummary.update({
+                where: { farmId },
+                data: {
+                    totalEggsAvailable: {
+                        decrement: quantity,
+                    },
                 },
             }),
         ]);

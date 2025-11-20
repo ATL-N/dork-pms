@@ -39,7 +39,7 @@ export async function GET(request) {
         { day: 'asc' },
       ],
     });
-    console.log('health templates fetched', templates)
+    // console.log('health templates fetched', templates)
     return NextResponse.json(templates);
   } catch (error) {
     console.error("Failed to fetch health schedule templates:", error);

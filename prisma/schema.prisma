@@ -119,8 +119,18 @@ model Farm {
   invitations         Invitation[]
   customTaskSchedules CustomTaskSchedule[]
   useCustomSchedule   Boolean              @default(false)
+  farmSummary         FarmSummary?
 
   @@index([name])
+}
+
+model FarmSummary {
+  id                  String   @id @default(cuid())
+  farmId              String   @unique
+  totalEggsAvailable  Int      @default(0)
+  lastUpdatedAt       DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -459,11 +469,7 @@ model HealthTask {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  inventoryItemId String?
-  quantityUsed    Float?
-
   flock         Flock             @relation(fields: [flockId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem?    @relation(fields: [inventoryItemId], references: [id])
   dailyRecords  DailyTaskRecord[]
 
   @@index([flockId, scheduledDate])
@@ -542,14 +548,14 @@ model FeedConsumption {
   quantity     Float
   notes        String?
   flockId      String
-  feedItemId   String
   recordedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  flock      Flock         @relation(fields: [flockId], references: [id])
-  feedItem   InventoryItem @relation(fields: [feedItemId], references: [id])
-  recordedBy User          @relation(fields: [recordedById], references: [id])
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  inventoryLotId String
+  inventoryLot   InventoryLot @relation(fields: [inventoryLotId], references: [id])
+  flock          Flock        @relation(fields: [flockId], references: [id])
+  recordedBy     User         @relation(fields: [recordedById], references: [id])
 }
 
 model FeedFormulation {
@@ -580,25 +586,38 @@ model FormulationIngredient {
 }
 
 model InventoryItem {
-  id           String   @id @default(cuid())
-  name         String
-  category     String // e.g., medication, supplies
-  currentStock Float
-  unit         String
-  minThreshold Float?
-  price        Float?
-  supplier     String?
-  status       String   @default("active") // e.g., active, archived
-  farmId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  id                String  @id @default(cuid())
+  name              String
+  category          String // e.g., Feed, Medication, Supplies
+  unit              String // Standard consumption unit, e.g., "kg", "ml", "pcs"
+  lowStockThreshold Float?
+  farmId            String
+  status            String  @default("active") // e.g., active, archived
 
-  farm             Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  healthTasks      HealthTask[]
-  dailyTaskRecords DailyTaskRecord[]
-  feedConsumptions FeedConsumption[]
+  farm Farm           @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  lots InventoryLot[]
 
   @@index([farmId])
+}
+
+model InventoryLot {
+  id                String    @id @default(cuid())
+  inventoryItemId   String
+  purchaseDate      DateTime
+  supplier          String?
+  initialQuantity   Float
+  remainingQuantity Float
+  unit              String // Purchase unit, e.g., "bag", "bottle"
+  totalCost         Float
+  unitConversionFactor Float? @default(1) // e.g., if purchase unit is "bag" and consumption is "kg", this could be 50 (50kg/bag)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  inventoryItem     InventoryItem       @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  feedConsumptions  FeedConsumption[]
+  healthTaskRecords DailyTaskRecord[]
+
+  @@index([inventoryItemId])
 }
 
 model Transaction {
@@ -720,9 +739,36 @@ model DailyTaskRecord {
   healthTaskId String
   healthTask   HealthTask @relation(fields: [healthTaskId], references: [id], onDelete: Cascade)
 
-  inventoryItemId String?
-  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
-
-  @@unique([healthTaskId, date])
-  @@index([healthTaskId])
-}
+  inventoryLotId String?
+  
+    inventoryLot   InventoryLot? @relation(fields: [inventoryLotId], references: [id])
+  
+    @@unique([healthTaskId, date])
+    @@index([healthTaskId])
+  }
+  
+  // BENCHMARK MODELS
+  
+  model Breed {
+    id          Int      @id @default(autoincrement())
+    name        String   @unique
+    type        String   // "LAYER" or "BROILER"
+    benchmarks  StandardBenchmark[]
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+  }
+  
+  model StandardBenchmark {
+    id                        Int      @id @default(autoincrement())
+    breedId                   Int
+    breed                     Breed    @relation(fields: [breedId], references: [id], onDelete: Cascade)
+    week                      Int
+    expectedBodyWeight        Float?
+    expectedFeedIntake        Float?
+    expectedEggProductionRate Float?
+    createdAt                 DateTime @default(now())
+    updatedAt                 DateTime @updatedAt
+  
+    @@unique([breedId, week])
+  }
+  

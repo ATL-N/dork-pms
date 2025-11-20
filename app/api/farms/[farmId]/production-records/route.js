@@ -103,17 +103,31 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Flock not found in this farm' }, { status: 404 });
     }
 
-    const newRecord = await prisma.eggProductionRecord.create({
-      data: {
-        id: body.id, // Use the ID from the request body
-        flockId,
-        date: date ? new Date(date) : new Date(),
-        totalEggs: parseInt(totalEggs, 10),
-        brokenEggs: brokenEggs ? parseInt(brokenEggs, 10) : 0,
-        notes,
-        recordedById: user.id,
-      },
-    });
+    const [newRecord, farmSummary] = await prisma.$transaction([
+      prisma.eggProductionRecord.create({
+        data: {
+          id: body.id, // Use the ID from the request body
+          flockId,
+          date: date ? new Date(date) : new Date(),
+          totalEggs: parseInt(totalEggs, 10),
+          brokenEggs: brokenEggs ? parseInt(brokenEggs, 10) : 0,
+          notes,
+          recordedById: user.id,
+        },
+      }),
+      prisma.farmSummary.upsert({
+        where: { farmId },
+        update: {
+          totalEggsAvailable: {
+            increment: parseInt(totalEggs, 10),
+          },
+        },
+        create: {
+          farmId,
+          totalEggsAvailable: parseInt(totalEggs, 10),
+        },
+      }),
+    ]);
 
     await logAction('INFO', `User ${user.id} recorded egg production for flock ${flockId}.`, { userId: user.id, farmId, flockId, recordId: newRecord.id });
 

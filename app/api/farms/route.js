@@ -59,22 +59,34 @@ export async function POST(request) {
   }
 
   try {
-    const newFarm = await prisma.farm.create({
-      data: {
-        id: tempId,
-        name,
-        location,
-        owner: {
-          connect: { id: user.id },
-        },
-        users: {
-          create: {
-            userId: user.id,
-            role: "OWNER",
+    const newFarm = await prisma.$transaction(async (tx) => {
+      const farm = await tx.farm.create({
+        data: {
+          id: tempId,
+          name,
+          location,
+          owner: {
+            connect: { id: user.id },
+          },
+          users: {
+            create: {
+              userId: user.id,
+              role: "OWNER",
+            },
           },
         },
-      },
+      });
+
+      await tx.farmSummary.create({
+        data: {
+          farmId: farm.id,
+          totalEggsAvailable: 0,
+        },
+      });
+
+      return farm;
     });
+
     await logAction('INFO', `User created a new farm: ${name}` , { userId: user.id, farmId: newFarm.id });
     return new Response(JSON.stringify(newFarm), { status: 201 });
   } catch (error) {

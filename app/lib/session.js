@@ -13,8 +13,8 @@ export async function getCurrentUser(req) {
   // 1. Check for mobile user via token (validated by middleware)
   if (req && req.headers.has('x-user-id')) {
     const userId = req.headers.get('x-user-id');
-    console.log("=== TOKEN AUTH DEBUG ===");
-    console.log("Found user ID from token:", userId);
+    // console.log("=== TOKEN AUTH DEBUG ===");
+    // console.log("Found user ID from token:", userId);
     
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -42,8 +42,8 @@ export async function getCurrentUser(req) {
             farms: userFarms,
             isOwner: userFarms.some(f => f.role === 'OWNER'),
         };
-        console.log("Returning user from token:", finalUser);
-        console.log("=== END TOKEN AUTH DEBUG ===");
+        // console.log("Returning user from token:", finalUser);
+        // console.log("=== END TOKEN AUTH DEBUG ===");
         return finalUser;
     }
   }
@@ -51,12 +51,12 @@ export async function getCurrentUser(req) {
   // 2. Fallback to web session cookie
   const session = await getServerSession(authOptions);
 
-  console.log("=== SESSION DEBUG ===");
-  console.log("Full session:", JSON.stringify(session, null, 2));
-  console.log("Session user:", session?.user);
-  console.log("User ID:", session?.user?.id);
-  console.log("User role:", session?.user?.role);
-  console.log("=== END SESSION DEBUG ===");
+  // console.log("=== SESSION DEBUG ===");
+  // console.log("Full session:", JSON.stringify(session, null, 2));
+  // console.log("Session user:", session?.user);
+  // console.log("User ID:", session?.user?.id);
+  // console.log("User role:", session?.user?.role);
+  // console.log("=== END SESSION DEBUG ===");
 
   return session?.user;
 }

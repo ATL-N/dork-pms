@@ -45,8 +45,20 @@ export async function PUT(request, { params }) {
 
     // If body is empty, it might be a simple stock update, so we only update what's there.
     // If the body has content, we use it.
-    const dataToUpdate = Object.keys(body).length > 0 ? body : {};
+    const dataToUpdate = {};
+    if (body.name) dataToUpdate.name = body.name;
+    if (body.category) dataToUpdate.category = body.category;
+    if (body.currentStock !== undefined) dataToUpdate.currentStock = parseFloat(body.currentStock);
+    if (body.unit) dataToUpdate.unit = body.unit;
+    if (body.lowStockThreshold !== undefined) dataToUpdate.lowStockThreshold = body.lowStockThreshold === null ? null : parseFloat(body.lowStockThreshold);
+    if (body.supplier) dataToUpdate.supplier = body.supplier;
+    if (body.price !== undefined) dataToUpdate.price = body.price === null ? null : parseFloat(body.price);
+    if (body.status) dataToUpdate.status = body.status;
 
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return NextResponse.json({ message: 'No fields to update' }, { status: 200 });
+    }
 
     const updatedItem = await prisma.inventoryItem.update({
       where: { id: itemId },

@@ -16,134 +16,202 @@ const routeContextSchema = z.object({
   }),
 });
 
-export async function PUT(request, { params }) {
-    const { farmId, taskId, dailyRecordId } = await params;
-    try {
-        console.log('[DEBUG] PUT handler started');
-        console.log('[DEBUG] Params destructured successfully:', { farmId, taskId, dailyRecordId });
+export async function PUT(request, {params}) {
 
-        const user = await getCurrentUser(request);
-        console.log('[DEBUG] Current user retrieved:', user?.id);
+    const { farmId, taskId, dailyRecordId } = await params;
+
+    let user; // Declare user in a higher scope
+
+
+
+    try {
+
+        user = await getCurrentUser(request);
 
         if (!user) {
+
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
         }
+
+
 
         const farmUser = await prisma.farmUser.findFirst({
+
             where: { farmId, userId: user.id },
+
         });
+
+
 
         if (!farmUser) {
+
             return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
+
         }
+
+
 
         const data = await request.json();
-        console.log('[DEBUG] Received data:', data);
-        const { status, notes, inventoryItemId, quantityUsed } = data;
+
+        const { status, notes, inventoryLotId, quantityUsed } = data;
+
+
 
         if (status !== 'COMPLETED' && status !== 'SKIPPED') {
+
             return NextResponse.json({ error: 'Invalid status update.' }, { status: 400 });
+
         }
 
-        console.log('[DEBUG] Starting transaction...');
+
+
         const result = await prisma.$transaction(async (tx) => {
-            console.log('[DEBUG] Finding daily record:', dailyRecordId);
-            const dailyRecord = await tx.dailyTaskRecord.findUnique({
-                where: { id: dailyRecordId },
-            });
 
-            if (!dailyRecord) {
-                throw new Error('Daily task record not found.');
-            }
-            
-            if (dailyRecord.healthTaskId !== taskId) {
-                throw new Error('Daily record does not belong to the specified health task.');
-            }
+            // 1. Handle inventory update if applicable
 
-            console.log('[DEBUG] Checking inventory...', { inventoryItemId, quantityUsed });
-            if (inventoryItemId && quantityUsed > 0) {
-                const inventoryItem = await tx.inventoryItem.findUnique({
-                    where: { id: inventoryItemId },
-                });
+            if (inventoryLotId && quantityUsed > 0 && status === 'COMPLETED') {
 
-                if (!inventoryItem) {
-                    throw new Error('Inventory item not found.');
-                }
-                if (inventoryItem.currentStock < quantityUsed) {
-                    throw new Error(`Not enough stock for ${inventoryItem.name}.`);
+                const lot = await tx.inventoryLot.findUnique({ where: { id: inventoryLotId } });
+
+                if (!lot) {
+
+                    throw new Error('Inventory lot not found.');
+
                 }
 
-                console.log('[DEBUG] Updating inventory item stock...');
-                await tx.inventoryItem.update({
-                    where: { id: inventoryItemId },
-                    data: {
-                        currentStock: {
-                            decrement: parseFloat(quantityUsed),
-                        },
-                    },
+                if (lot.remainingQuantity < quantityUsed) {
+
+                    throw new Error(`Not enough stock in lot. Available: ${lot.remainingQuantity}`);
+
+                }
+
+                await tx.inventoryLot.update({
+
+                    where: { id: inventoryLotId },
+
+                    data: { remainingQuantity: { decrement: parseFloat(quantityUsed) } },
+
                 });
+
             }
 
-            console.log('[DEBUG] Updating daily record...');
-            const updatedDailyRecord = await tx.dailyTaskRecord.update({
+
+
+            // 2. Use upsert to create or update the daily record
+
+            const updatedDailyRecord = await tx.dailyTaskRecord.upsert({
+
                 where: { id: dailyRecordId },
-                data: {
+
+                update: {
+
                     status,
+
                     notes,
-                    inventoryItemId: inventoryItemId || null,
+
+                    inventoryLotId: inventoryLotId || null,
+
                     quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
+
                 },
+
+                create: {
+
+                    id: dailyRecordId,
+
+                    healthTaskId: taskId,
+
+                    date: new Date(), // The date of completion
+
+                    status,
+
+                    notes,
+
+                    inventoryLotId: inventoryLotId || null,
+
+                    quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
+
+                }
+
             });
 
-            console.log('[DEBUG] Updated daily record:', updatedDailyRecord);
 
-            // Refetch the parent task AFTER updating the daily record to get fresh data
-            console.log('[DEBUG] Fetching parent task with updated records...');
+
+            // 3. Check and update the parent task's status
+
             const parentTask = await tx.healthTask.findUnique({
+
                 where: { id: taskId },
+
                 include: { dailyRecords: true },
+
             });
 
-            console.log('[DEBUG] Parent task:', parentTask);
-            console.log('[DEBUG] Daily records statuses:', parentTask?.dailyRecords.map(r => ({ id: r.id, status: r.status })));
+
 
             if (parentTask && parentTask.dailyRecords.every(r => r.status === 'COMPLETED' || r.status === 'SKIPPED')) {
-                console.log('[DEBUG] All records complete, updating parent task to COMPLETED');
+
                 await tx.healthTask.update({
+
                     where: { id: taskId },
+
                     data: { status: 'COMPLETED' },
+
                 });
+
             } else if (parentTask && parentTask.status !== 'IN_PROGRESS') {
-                console.log('[DEBUG] Updating parent task to IN_PROGRESS');
+
                 await tx.healthTask.update({
+
                     where: { id: taskId },
+
                     data: { status: 'IN_PROGRESS' },
+
                 });
+
             }
 
+
+
             return updatedDailyRecord;
+
         });
 
-        console.log('[DEBUG] Transaction completed successfully');
+
 
         await logAction(
+
             "INFO",
+
             `User ${user.email} updated daily record for health task ${taskId} on farm ${farmId}.`,
+
             { farmId, taskId, dailyRecordId: result.id, userId: user.id }
+
         );
+
+
 
         return NextResponse.json(result, { status: 200 });
 
+
+
     } catch (error) {
-        console.error('[ERROR] Full error object:', error);
-        console.error('[ERROR] Error message:', error.message);
-        console.error('[ERROR] Error stack:', error.stack);
-        
+
+        const userId = user ? user.id : 'unknown';
+
         await logAction(
+
             "ERROR",
+
             `Failed to update daily record for health task ${taskId}. Error: ${error.message}`,
-            { farmId, taskId, dailyRecordId, stack: error.stack, userId: user.id }
+
+            { farmId, taskId, dailyRecordId, stack: error.stack, userId }
+
         );
+
         return NextResponse.json({ error: error.message || 'Failed to update daily record' }, { status: 500 });
+
     }
+
 }

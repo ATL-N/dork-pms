@@ -1,0 +1,16 @@
+# Use a lightweight base image
+FROM alpine:latest
+
+# Install curl and the cron daemon
+RUN apk add --no-cache curl busybox-initscripts
+
+# Copy the crontab file into the container
+COPY crontab /etc/crontabs/root
+
+# Give execution rights to the crontab file
+RUN chmod 0644 /etc/crontabs/root
+
+# The command to run when the container starts
+# crond -f runs the cron daemon in the foreground
+# -l 8 sets the log level (8 is verbose for debugging)
+CMD ["crond", "-f", "-l", "8"]

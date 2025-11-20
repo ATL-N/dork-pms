@@ -7,7 +7,7 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
-    const { farmId, taskId } =await  params;
+    const { farmId, taskId } = await params;
     const user = await getCurrentUser(request);
 
     if (!user) {
@@ -24,48 +24,75 @@ export async function PUT(request, { params }) {
         }
 
         const data = await request.json();
-        const { status, inventoryItemId, quantityUsed, notes } = data;
+        const { status, inventoryLotId, quantityUsed, notes } = data;
 
         if (status !== 'COMPLETED') {
-            return NextResponse.json({ error: 'Invalid status update.' }, { status: 400 });
+            return NextResponse.json({ error: 'Invalid status for this operation.' }, { status: 400 });
         }
 
-        // 1. Handle inventory update if applicable
-        if (inventoryItemId && quantityUsed != null && parseFloat(quantityUsed) > 0) {
-            await prisma.$transaction(async (tx) => {
-                const inventoryItem = await tx.inventoryItem.findUnique({
-                    where: { id: inventoryItemId },
+        const updatedTask = await prisma.$transaction(async (tx) => {
+            const task = await tx.healthTask.findUnique({ where: { id: taskId } });
+            if (!task) {
+                throw new Error('Health task not found.');
+            }
+
+            // 1. Handle inventory update if applicable
+            if (inventoryLotId && quantityUsed != null && parseFloat(quantityUsed) > 0) {
+                const lot = await tx.inventoryLot.findUnique({ where: { id: inventoryLotId } });
+                if (!lot) {
+                    throw new Error('Inventory lot not found.');
+                }
+                if (lot.remainingQuantity < parseFloat(quantityUsed)) {
+                    throw new Error(`Not enough stock in lot. Available: ${lot.remainingQuantity}`);
+                }
+                await tx.inventoryLot.update({
+                    where: { id: inventoryLotId },
+                    data: { remainingQuantity: { decrement: parseFloat(quantityUsed) } },
                 });
+            }
 
-                if (!inventoryItem) {
-                    throw new Error('Inventory item not found.');
-                }
-                if (inventoryItem.currentStock < parseFloat(quantityUsed)) {
-                    throw new Error(`Not enough stock for ${inventoryItem.name}.`);
-                }
-
-                await tx.inventoryItem.update({
-                    where: { id: inventoryItemId },
-                    data: {
-                        currentStock: {
-                            decrement: parseFloat(quantityUsed),
-                        },
+            // 2. Create or update the DailyTaskRecord for a single-day task
+            // For multi-day tasks, the client should use the specific daily-record endpoint
+            if (task.durationInDays <= 1) {
+                const today = new Date();
+                // Use upsert to create a daily record if it doesn't exist, or update if it does.
+                await tx.dailyTaskRecord.upsert({
+                    where: {
+                        healthTaskId_date: {
+                            healthTaskId: taskId,
+                            date: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+                        }
                     },
+                    update: {
+                        status: 'COMPLETED',
+                        notes,
+                        inventoryLotId,
+                        quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
+                    },
+                    create: {
+                        healthTaskId: taskId,
+                        date: new Date(),
+                        status: 'COMPLETED',
+                        notes,
+                        inventoryLotId,
+                        quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
+                    }
                 });
-            });
-        }
+            }
 
-        // 2. Update the health task
-        const updatedTask = await prisma.healthTask.update({
-            where: { id: taskId },
-            data: {
-                status: 'COMPLETED',
-                completedDate: new Date(),
-                inventoryItemId: inventoryItemId,
-                quantityUsed: quantityUsed ? parseFloat(quantityUsed) : null,
-                notes: notes,
-            },
+            // 3. Update the parent health task
+            const parentTask = await tx.healthTask.update({
+                where: { id: taskId },
+                data: {
+                    status: 'COMPLETED',
+                    completedDate: new Date(),
+                    notes: notes, // Also update notes on the parent task
+                },
+            });
+
+            return parentTask;
         });
+
 
         await logAction(
             "INFO",

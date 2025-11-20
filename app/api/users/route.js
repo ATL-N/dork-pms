@@ -1,6 +1,8 @@
 // app/api/users/route.js
 import prisma from '@/app/lib/prisma';
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/app/lib/session';
+
 
 export async function GET(request) {
     const user = await getCurrentUser(request);

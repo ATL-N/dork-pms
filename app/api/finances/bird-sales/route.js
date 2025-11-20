@@ -18,8 +18,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const [newTransaction, newBirdSale] = await prisma.$transaction([
-            prisma.transaction.upsert({
+        const result = await prisma.$transaction(async (tx) => {
+            const transaction = await tx.transaction.upsert({
                 where: { id: transactionId },
                 update: {}, // Do nothing if it exists
                 create: {
@@ -31,8 +31,9 @@ export async function POST(request) {
                     amount: revenue,
                     customer,
                 },
-            }),
-            prisma.birdResale.create({
+            });
+
+            const birdSale = await tx.birdResale.create({
                 data: {
                     id: birdSaleId,
                     flockId,
@@ -41,10 +42,26 @@ export async function POST(request) {
                     date: new Date(date),
                     recordedById: currentUser.id,
                 },
-            }),
-        ]);
+            });
 
-        return NextResponse.json({ birdSale: newBirdSale, transaction: newTransaction }, { status: 201 });
+            const flock = await tx.flock.findUnique({ where: { id: flockId } });
+            if (!flock) {
+                throw new Error('Flock not found');
+            }
+            const newQuantity = flock.quantity - quantity;
+
+            await tx.flock.update({
+                where: { id: flockId },
+                data: {
+                    quantity: newQuantity,
+                    status: newQuantity <= 0 ? 'archived' : flock.status,
+                },
+            });
+
+            return { birdSale, transaction };
+        });
+
+        return NextResponse.json(result, { status: 201 });
 
     } catch (error) {
         console.error(`Error creating bird sale:`, error);

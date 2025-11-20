@@ -1,53 +1,11 @@
 // app/api/farms/[farmId]/flocks/[flockId]/feed-consumption/route.js
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/session';
 import { logAction } from '@/app/lib/logging';
 
-const prisma = new PrismaClient();
-
-export async function GET(request, { params }) {
-    const { farmId, flockId } = params;
-    const user = await getCurrentUser(request);
-
-    if (!user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    try {
-        const farmUser = await prisma.farmUser.findFirst({
-            where: { farmId, userId: user.id },
-        });
-
-        if (!farmUser) {
-            return NextResponse.json({ error: 'You do not have permission to view these records.' }, { status: 403 });
-        }
-
-        const records = await prisma.feedConsumption.findMany({
-            where: {
-                flockId: flockId,
-            },
-            orderBy: {
-                date: 'asc',
-            },
-        });
-
-        return NextResponse.json(records, { status: 200 });
-
-    } catch (error) {
-        await logAction(
-            "ERROR",
-            `Failed to fetch feed consumption records for flock ${flockId}. Error: ${error.message}`,
-            { farmId, flockId, stack: error.stack, userId: user.id }
-        );
-        return NextResponse.json({ error: 'Failed to fetch feed consumption records' }, { status: 500 });
-    }
-}
-
 export async function POST(request, { params }) {
-    console.log('[DEBUG] Received params:', params);
     const { farmId, flockId } = await params;
-    console.log('[DEBUG] Destructured params:', { farmId, flockId });
     const user = await getCurrentUser(request);
 
     if (!user) {
@@ -55,76 +13,82 @@ export async function POST(request, { params }) {
     }
 
     try {
-        const farmUser = await prisma.farmUser.findFirst({
-            where: { farmId, userId: user.id },
+        // Authorize user
+        const farmUser = await prisma.farmUser.findUnique({
+            where: { farmId_userId: { farmId, userId: user.id } },
         });
 
         if (!farmUser) {
-            return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
+            return NextResponse.json({ error: 'You do not have access to this farm.' }, { status: 403 });
         }
 
         const data = await request.json();
-        console.log('[DEBUG] Received data:', data);
-        const { id, feedItemId, quantity, date, recordedById } = data;
+        const {
+            id: consumptionId,
+            inventoryLotId,
+            quantity,
+            date,
+            recordedById
+        } = data;
 
-        if (!id || !feedItemId || !quantity || !date || !recordedById) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!consumptionId || !inventoryLotId || !quantity || !date || !recordedById) {
+            return NextResponse.json({ error: 'Missing required fields in payload' }, { status: 400 });
         }
 
         const result = await prisma.$transaction(async (tx) => {
-            const inventoryItem = await tx.inventoryItem.findUnique({
-                where: { id: feedItemId },
+            // 1. Get the inventory lot to ensure it exists and has enough stock
+            const lot = await tx.inventoryLot.findUnique({
+                where: { id: inventoryLotId },
             });
 
-            if (!inventoryItem) {
-                throw new Error('Inventory item not found.');
+            if (!lot) {
+                throw new Error(`Inventory lot with ID ${inventoryLotId} not found.`);
             }
 
-            if (inventoryItem.currentStock < quantity) {
-                throw new Error(`Not enough stock for ${inventoryItem.name}.`);
+            if (lot.remainingQuantity < quantity) {
+                throw new Error(`Not enough stock in lot ${inventoryLotId}. Available: ${lot.remainingQuantity}, Required: ${quantity}`);
             }
 
-            await tx.inventoryItem.update({
-                where: { id: feedItemId },
+            // 2. Create the feed consumption record
+            const newConsumption = await tx.feedConsumption.create({
                 data: {
-                    currentStock: {
-                        decrement: parseFloat(quantity),
-                    },
-                },
-            });
-
-            const newRecord = await tx.feedConsumption.create({
-                data: {
-                    id,
+                    id: consumptionId,
                     flockId,
-                    feedItemId,
-                    quantity: parseFloat(quantity),
+                    inventoryLotId,
+                    quantity,
                     date: new Date(date),
                     recordedById,
                 },
             });
 
-            return newRecord;
+            // 3. Update the inventory lot's remaining quantity
+            await tx.inventoryLot.update({
+                where: { id: inventoryLotId },
+                data: {
+                    remainingQuantity: {
+                        decrement: quantity,
+                    },
+                },
+            });
+
+            return newConsumption;
         });
 
         await logAction(
-            "INFO",
-            `User ${user.email} recorded feed consumption for flock ${flockId}.`,
-            { farmId, flockId, feedConsumptionId: result.id, userId: user.id }
+            'INFO',
+            `User ${user.email} recorded feed consumption of ${quantity} for flock ${flockId}`,
+            { farmId, flockId, consumptionId: result.id }
         );
 
         return NextResponse.json(result, { status: 201 });
 
     } catch (error) {
-        console.error('[ERROR] Full error object:', error);
-        console.error('[ERROR] Error message:', error.message);
-        console.error('[ERROR] Error stack:', error.stack);
-        
+        console.error('Failed to record feed consumption:', error);
         await logAction(
-            "ERROR",
+            'ERROR',
             `Failed to record feed consumption for flock ${flockId}. Error: ${error.message}`,
-            { farmId, flockId, stack: error.stack, userId: user.id }
+            { farmId, flockId, stack: error.stack }
         );
-        return NextResponse.json({ error: error.message || 'Failed to record feed consumption' }, { status: 500 });
+        return NextResponse.json({ error: `Failed to record feed consumption: ${error.message}` }, { status: 500 });
     }
 }

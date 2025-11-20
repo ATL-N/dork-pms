@@ -1,0 +1,5 @@
+# /etc/crontabs/root
+# Run every day at 8:00 AM
+0 8 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" http://dorkpf-app:3000/api/notifications/trigger
+
+# Add a blank line at the end of the file for cron

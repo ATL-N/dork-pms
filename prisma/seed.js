@@ -218,10 +218,113 @@ async function seedHealthTemplates() {
   console.log('Health schedule templates seeded.');
 }
 
+async function seedBreeds() {
+  console.log('Seeding breeds...');
+  const breeds = [
+    // Layers
+    { name: 'Isa Brown', type: 'LAYER' },
+    { name: 'White Leghorn', type: 'LAYER' },
+    { name: 'Lohmann Brown', type: 'LAYER' },
+    { name: 'Generic Layer', type: 'LAYER' },
+    // Broilers
+    { name: 'Ross 308', type: 'BROILER' },
+    { name: 'Cobb 500', type: 'BROILER' },
+    { name: 'Generic Broiler', type: 'BROILER' },
+  ];
+
+  for (const breed of breeds) {
+    await prisma.breed.upsert({
+      where: { name: breed.name },
+      update: {},
+      create: breed,
+    });
+  }
+  console.log('Breeds seeded.');
+}
+
+async function seedBenchmarks() {
+  console.log('Seeding benchmarks...');
+  const isaBrown = await prisma.breed.findUnique({ where: { name: 'Isa Brown' } });
+  const cobb500 = await prisma.breed.findUnique({ where: { name: 'Cobb 500' } });
+  const genericLayer = await prisma.breed.findUnique({ where: { name: 'Generic Layer' } });
+  const genericBroiler = await prisma.breed.findUnique({ where: { name: 'Generic Broiler' } });
+
+  // ISA Brown (Layer) - Sample Data
+  if (isaBrown) {
+    for (let week = 1; week <= 90; week++) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: isaBrown.id, week } },
+        update: {},
+        create: {
+          breedId: isaBrown.id,
+          week: week,
+          expectedFeedIntake: 18 + 0.5 * week * 5, // g/day, simplistic growth
+          expectedBodyWeight: 70 + week * 20, // g, simplistic growth
+          expectedEggProductionRate: week > 18 ? Math.min(0.95, (week - 18) * 0.05) : 0, // %
+        },
+      });
+    }
+  }
+
+  // Cobb 500 (Broiler) - Sample Data
+  if (cobb500) {
+    for (let week = 1; week <= 8; week++) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: cobb500.id, week } },
+        update: {},
+        create: {
+          breedId: cobb500.id,
+          week: week,
+          expectedFeedIntake: 25 + week * 22, // g/day, simplistic growth
+          expectedBodyWeight: 150 + week * 450, // g, simplistic growth
+        },
+      });
+    }
+  }
+  
+  // Generic Layer
+  if (genericLayer) {
+    for (let week = 1; week <= 90; week++) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: genericLayer.id, week } },
+        update: {},
+        create: {
+          breedId: genericLayer.id,
+          week: week,
+          expectedFeedIntake: 20 + 0.5 * week * 5, // g/day, slightly lower than isa brown
+          expectedBodyWeight: 65 + week * 19, // g, slightly lower
+          expectedEggProductionRate: week > 20 ? Math.min(0.92, (week - 20) * 0.045) : 0, // starts later, slightly lower peak
+        },
+      });
+    }
+  }
+
+  // Generic Broiler
+  if (genericBroiler) {
+    for (let week = 1; week <= 8; week++) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: genericBroiler.id, week } },
+        update: {},
+        create: {
+          breedId: genericBroiler.id,
+          week: week,
+          expectedFeedIntake: 22 + week * 20, // g/day, slightly lower
+          expectedBodyWeight: 140 + week * 430, // g, slightly lower
+        },
+      });
+    }
+  }
+
+  console.log('Benchmarks seeded.');
+}
+
+
 async function main() {
   await seedUsers();
   await seedTaskTemplates();
   await seedHealthTemplates();
+  await seedBreeds();
+  await seedBenchmarks();
 }
 
 main()

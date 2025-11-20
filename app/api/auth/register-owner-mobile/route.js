@@ -18,7 +18,7 @@ export async function POST(request) {
     });
 
     if (existingUserByEmail) {
-      return new Response(JSON.stringify({ error: 'User with this email already exists' }), { status: 409 });
+      return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
     }
 
     const existingUserByPhone = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ export async function POST(request) {
     });
 
     if (existingUserByPhone) {
-      return new Response(JSON.stringify({ error: 'User with this phone number already exists' }), { status: 409 });
+      return NextResponse.json({ error: 'User with this phone number already exists' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);

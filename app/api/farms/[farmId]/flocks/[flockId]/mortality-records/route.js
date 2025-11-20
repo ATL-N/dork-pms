@@ -118,10 +118,8 @@ export async function POST(req, { params }) {
       await prisma.flock.update({
         where: { id: flockId },
         data: {
-          quantity: {
-            decrement: quantity,
-          },
-          status: newQuantity <= 0 ? 'archived' : undefined,
+          quantity: newQuantity,
+          status: newQuantity <= 0 ? 'archived' : flock.status,
         },
       });
 

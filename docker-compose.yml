@@ -66,6 +66,21 @@ services:
       - "-c"
       - "ssl=off"
 
+  cron-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    env_file:
+      - .env
+    environment:
+      - NOTIFICATION_TRIGGER_SECRET=${NOTIFICATION_TRIGGER_SECRET}
+    depends_on:
+      dorkpf-app:
+        condition: service_healthy
+    restart: always
+    networks:
+      - traefik-public
+
 volumes:
   postgres-data-dorkpf:
     driver: local

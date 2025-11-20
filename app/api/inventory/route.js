@@ -55,7 +55,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { id, farmId, name, category, currentStock, unit, minThreshold, supplier, price } = body;
+    const { id, farmId, name, category, currentStock, unit, lowStockThreshold, supplier, price } = body;
 
     if (!id || !farmId || !name || !category || currentStock === undefined || !unit) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -69,7 +69,7 @@ export async function POST(request) {
         category,
         currentStock: parseFloat(currentStock),
         unit,
-        minThreshold: minThreshold ? parseFloat(minThreshold) : null,
+        lowStockThreshold: lowStockThreshold ? parseFloat(lowStockThreshold) : null,
         supplier,
         price: price ? parseFloat(price) : null,
       },

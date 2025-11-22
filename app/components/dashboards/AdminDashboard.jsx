@@ -79,11 +79,14 @@ export default function AdminDashboard() {
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <SummaryCard title="Total Users" value={summary.totalUsers} icon={<Users />} />
         <SummaryCard title="Total Farms" value={summary.totalFarms} icon={<Home />} />
         <SummaryCard title="Total Active Birds" value={summary.totalBirds.toLocaleString()} icon={<Feather />} />
         <SummaryCard title="Pending Approvals" value={(requests.owners.count || 0) + (requests.vets.count || 0)} icon={<UserCheck />} />
+        <Link href="/admin/ads">
+          <SummaryCard title="Advertisements" value={summary.activeAdsCount || 0} icon={<Briefcase />} isLink={true} />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

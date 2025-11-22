@@ -174,6 +174,7 @@ model User {
   mortalityRecords        MortalityRecord[]
   growthRecords           GrowthRecord[]
   PasswordResetToken      PasswordResetToken[]
+  interactions            UserAdInteraction[]
 }
 
 model CustomTaskSchedule {
@@ -771,4 +772,36 @@ model DailyTaskRecord {
   
     @@unique([breedId, week])
   }
-  
+
+// ADVERTISEMENT MODELS
+
+model Advertisement {
+  id               String    @id @default(cuid())
+  title            String
+  body             String
+  imageUrl         String
+  callToActionText String
+  callToActionUrl  String
+  isActive         Boolean   @default(false)
+  priority         Int       @default(10)
+  viewCount        Int       @default(0)
+  clickCount       Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  interactions UserAdInteraction[]
+}
+
+model UserAdInteraction {
+  id        String   @id @default(cuid())
+  userId    String
+  adId      String
+  viewedAt  DateTime @default(now())
+  type      String   // "CUSTOM" or "LOCAL"
+  timeOfDay String   // "MORNING" or "AFTERNOON"
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad   Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([userId, viewedAt])
+}

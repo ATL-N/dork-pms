@@ -1,10 +1,10 @@
 import prisma from '@/app/lib/prisma';
 import { NextResponse } from 'next/server';
 import { sendPushNotification } from '@/app/lib/notificationService';
-import { getStartOfDay, getEndOfDay } from '@/app/lib/dateUtils'; // Updated import
+import { getStartOfDay, getEndOfDay } from '@/app/lib/dateUtils';
 
-// A simple secret to protect the endpoint. In a real app, use a more robust auth method.
-const TRIGGER_SECRET = process.env.NOTIFICATION_TRIGGER_SECRET || 'your-secret-key';
+// A simple secret to protect the endpoint.
+const TRIGGER_SECRET = process.env.NOTIFICATION_TRIGGER_SECRET;
 
 async function getHealthTaskNotifications() {
     const todayStart = getStartOfDay(new Date());
@@ -104,9 +104,9 @@ async function getLowStockNotifications() {
 
 
 export async function POST(request) {
-    // Protect the endpoint
+    // Protect the endpoint with a shared secret
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${TRIGGER_SECRET}`) {
+    if (!TRIGGER_SECRET || authHeader !== `Bearer ${TRIGGER_SECRET}`) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -122,7 +122,6 @@ export async function POST(request) {
             
             await sendPushNotification(user.fcmToken, title, body, {
                 action: 'view_health_tasks',
-                // Add any other data needed for navigation
             });
         }
 

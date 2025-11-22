@@ -19,6 +19,7 @@ export async function GET(request) {
     const farmCount = await prisma.farm.count();
     const ownerRequests = await prisma.user.findMany({ where: { ownerApprovalStatus: 'PENDING' } });
     const vetRequests = await prisma.user.findMany({ where: { userType: 'VET', vetProfile: { approvalStatus: 'PENDING' } } });
+    const activeAdsCount = await prisma.advertisement.count({ where: { isActive: true } });
 
     // --- New Analytics Queries ---
     
@@ -63,6 +64,7 @@ export async function GET(request) {
         totalUsers: userCount,
         totalFarms: farmCount,
         totalBirds: totalBirds._sum.quantity || 0,
+        activeAdsCount: activeAdsCount,
       },
       requests: {
         owners: { count: ownerRequests.length, data: ownerRequests },

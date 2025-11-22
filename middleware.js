@@ -6,6 +6,11 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
   console.log("Middleware running for:", pathname);
 
+  // Allow the notification trigger to pass through for its own auth
+  if (pathname === '/api/notifications/trigger') {
+    return NextResponse.next();
+  }
+
   // Let authentication API routes pass through
   if (
     pathname.startsWith("/api/auth") ||

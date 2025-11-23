@@ -89,6 +89,32 @@ const rawHealthScheduleTemplates = [
   { day: 592, durationInDays: 1, taskName: 'Inactivated Newcastle-Newcarvac', taskType: 'Vaccination', method: 'Injection', birdType: 'LAYER' },
   { day: 652, durationInDays: 1, taskName: 'Inactivated Newcastle-Newcarvac', taskType: 'Vaccination', method: 'Injection', birdType: 'LAYER' },
   { day: 712, durationInDays: 1, taskName: 'Inactivated Newcastle-Newcarvac', taskType: 'Vaccination', method: 'Injection', birdType: 'LAYER' },
+
+  // ============== BREEDER SCHEDULE ==============
+  // Note: This is a simplified, generic schedule. Breeder schedules can be very complex.
+  // Chick phase (Weeks 1-8)
+  { day: 1, durationInDays: 1, taskName: 'Glucose C & Vitamins', taskType: 'Medication', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 2, durationInDays: 4, taskName: 'Vitamins', taskType: 'Medication', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 7, durationInDays: 1, taskName: '1st Gumboro - Intermediate', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 14, durationInDays: 1, taskName: '1st Newcastle - HB1', taskType: 'Vaccination', method: 'Eye Drop', birdType: 'BREEDER' },
+  { day: 21, durationInDays: 1, taskName: '2nd Gumboro - Intermediate Plus', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 28, durationInDays: 1, taskName: '2nd Newcastle - Lasota', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 42, durationInDays: 1, taskName: '1st Fowl Pox', taskType: 'Vaccination', method: 'Wing Web Stab', birdType: 'BREEDER' },
+  { day: 56, durationInDays: 1, taskName: '3rd Gumboro - Oil Based (Killed)', taskType: 'Vaccination', method: 'Injection', birdType: 'BREEDER' },
+  
+  // Grower phase (Weeks 9-20)
+  { day: 63, durationInDays: 1, taskName: 'Deworming', taskType: 'Medication', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 70, durationInDays: 1, taskName: '3rd Newcastle - Lasota', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 84, durationInDays: 1, taskName: '2nd Fowl Pox', taskType: 'Vaccination', method: 'Wing Web Stab', birdType: 'BREEDER' },
+  { day: 98, durationInDays: 1, taskName: 'Fowl Typhoid - Killed', taskType: 'Vaccination', method: 'Injection', birdType: 'BREEDER' },
+  { day: 112, durationInDays: 1, taskName: 'Inactivated Newcastle + IB + EDS (Nobilis RT-IB-EDS)', taskType: 'Vaccination', method: 'Injection', birdType: 'BREEDER' },
+  { day: 126, durationInDays: 1, taskName: 'Deworming', taskType: 'Medication', method: 'Drinking Water', birdType: 'BREEDER' },
+
+  // Laying phase (Weeks 21+) - vaccinations repeated every 2-3 months
+  { day: 140, durationInDays: 1, taskName: '4th Newcastle - Lasota', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 200, durationInDays: 1, taskName: '5th Newcastle - Lasota', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  { day: 260, durationInDays: 1, taskName: '6th Newcastle - Lasota', taskType: 'Vaccination', method: 'Drinking Water', birdType: 'BREEDER' },
+  // ... and so on for the life of the breeder flock.
 ];
 
 function consolidateTemplates(templates) {
@@ -146,6 +172,12 @@ const taskTemplates = [
   { birdType: FlockType.LAYER, ageStartDays: 43, ageEndDays: 126, taskName: 'Feed Layers (Grower)', taskDescription: 'Provide grower mash.', timesPerDay: 2 },
   { birdType: FlockType.LAYER, ageStartDays: 127, ageEndDays: 1000, taskName: 'Feed Layers (Layer Mash)', taskDescription: 'Provide layer mash.', timesPerDay: 2 },
   { birdType: FlockType.LAYER, ageStartDays: 127, ageEndDays: 1000, taskName: 'Collect Eggs', taskDescription: 'Collect eggs from the nests.', timesPerDay: 2 },
+
+  // Breeders
+  { birdType: FlockType.BREEDER, ageStartDays: 0, ageEndDays: 56, taskName: 'Feed Breeders (Chick Starter)', taskDescription: 'Provide chick starter mash.', timesPerDay: 4 },
+  { birdType: FlockType.BREEDER, ageStartDays: 57, ageEndDays: 140, taskName: 'Feed Breeders (Grower)', taskDescription: 'Provide grower mash.', timesPerDay: 2 },
+  { birdType: FlockType.BREEDER, ageStartDays: 141, ageEndDays: 1000, taskName: 'Feed Breeders (Breeder Mash)', taskDescription: 'Provide breeder layer mash.', timesPerDay: 2 },
+  { birdType: FlockType.BREEDER, ageStartDays: 141, ageEndDays: 1000, taskName: 'Collect Hatching Eggs', taskDescription: 'Collect fertile eggs for incubation.', timesPerDay: 3 },
 ];
 
 async function seedUsers() {
@@ -230,6 +262,8 @@ async function seedBreeds() {
     { name: 'Ross 308', type: 'BROILER' },
     { name: 'Cobb 500', type: 'BROILER' },
     { name: 'Generic Broiler', type: 'BROILER' },
+    // Breeders
+    { name: 'Generic Breeder', type: 'BREEDER' },
   ];
 
   for (const breed of breeds) {
@@ -248,6 +282,7 @@ async function seedBenchmarks() {
   const cobb500 = await prisma.breed.findUnique({ where: { name: 'Cobb 500' } });
   const genericLayer = await prisma.breed.findUnique({ where: { name: 'Generic Layer' } });
   const genericBroiler = await prisma.breed.findUnique({ where: { name: 'Generic Broiler' } });
+  const genericBreeder = await prisma.breed.findUnique({ where: { name: 'Generic Breeder' } });
 
   // ISA Brown (Layer) - Sample Data
   if (isaBrown) {
@@ -310,6 +345,26 @@ async function seedBenchmarks() {
           week: week,
           expectedFeedIntake: 22 + week * 20, // g/day, slightly lower
           expectedBodyWeight: 140 + week * 430, // g, slightly lower
+        },
+      });
+    }
+  }
+
+  // Generic Breeder
+  if (genericBreeder) {
+    for (let week = 1; week <= 100; week++) { // Breeders have a longer life
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: genericBreeder.id, week } },
+        update: {},
+        create: {
+          breedId: genericBreeder.id,
+          week: week,
+          // Breeder feed intake is carefully managed to control weight
+          expectedFeedIntake: 30 + week * 1.5, 
+          // Body weight is higher than layers but controlled
+          expectedBodyWeight: 80 + week * 25, 
+          // Egg production starts later and might have a different curve
+          expectedEggProductionRate: week > 24 ? Math.min(0.88, (week - 24) * 0.04) : 0,
         },
       });
     }

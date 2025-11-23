@@ -65,10 +65,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { farmId, name, email, password, role } = await request.json();
+    const { farmId, name, email, telephone, password, role } = await request.json();
 
-    if (!farmId || !name || !email || !password || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!farmId || !name || !(email || telephone) || !password || !role) {
+      return NextResponse.json({ error: 'Missing required fields. Name, password, role, farmId, and either email or telephone are required.' }, { status: 400 });
     }
     
     // Authorization: Check if current user is OWNER or MANAGER of the farm
@@ -84,7 +84,13 @@ export async function POST(request) {
     }
 
     // Check if user already exists
-    let user = await prisma.user.findUnique({ where: { email } });
+    let user;
+    if (email) {
+      user = await prisma.user.findUnique({ where: { email } });
+    } else if (telephone) {
+      user = await prisma.user.findUnique({ where: { phoneNumber: telephone } });
+    }
+
 
     if (user) {
         // If user exists, check if they are already on the farm
@@ -98,13 +104,21 @@ export async function POST(request) {
         // User does not exist, create them with the provided password
         const passwordHash = await bcrypt.hash(password, 10);
 
+        const createData = {
+            name,
+            passwordHash,
+            userType: 'FARMER', // All staff are FARMER type
+        };
+
+        if (email) {
+            createData.email = email;
+        }
+        if (telephone) {
+            createData.phoneNumber = telephone;
+        }
+
         user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                passwordHash,
-                userType: 'FARMER', // All staff are FARMER type
-            },
+            data: createData,
         });
     }
 
@@ -116,7 +130,7 @@ export async function POST(request) {
         role, // 'WORKER' or 'MANAGER'
       },
       include: {
-        user: { select: { id: true, name: true, email: true } }
+        user: { select: { id: true, name: true, email: true, phoneNumber: true } }
       }
     });
 
@@ -124,8 +138,8 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error adding worker:', error);
-    if (error.code === 'P2002') { // Unique constraint failed (email)
-        return NextResponse.json({ error: 'A user with this email already exists.' }, { status: 409 });
+    if (error.code === 'P2002') { // Unique constraint failed (email or telephone)
+        return NextResponse.json({ error: 'A user with this email or telephone number already exists.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

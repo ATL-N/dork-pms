@@ -4,8 +4,8 @@ const nextConfig = {
     return [
       {
         source: "/api/socket",
-        // destination: "http://localhost:8080", // Proxy to the WebSocket server
-        destination: "https://pf.dorkordi.site/:8080", // Proxy to the WebSocket server
+        destination: "http://localhost:8080", // Proxy to the WebSocket server
+        // destination: "https://pf.dorkordi.site/:8080", // Proxy to the WebSocket server
       },
     ];
   },

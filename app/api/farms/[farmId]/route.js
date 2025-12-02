@@ -7,7 +7,7 @@ import { logAction } from '@/app/lib/logging';
 const prisma = new PrismaClient();
 
 export async function DELETE(request, { params }) {
-    const { farmId } = params;
+    const { farmId } = await params;
     const user = await getCurrentUser(request);
 
     if (!user) {

@@ -1,62 +1,94 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import prisma from '@/app/lib/prisma';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const MAX_OTP_ATTEMPTS = 5;
+
+/**
+ * Hashes an OTP for secure storage.
+ * @param {string} otp The plaintext OTP.
+ * @returns {string} The hashed OTP.
+ */
+function hashOTP(otp) {
+  return crypto.createHash('sha256').update(otp).digest('hex');
+}
 
 export async function POST(request) {
   try {
-    const { phoneNumber, token, newPassword } = await request.json();
+    const { phoneNumber, otp, newPassword } = await request.json();
 
-    if (!phoneNumber || !token || !newPassword) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    // --- Input Validation ---
+    if (!phoneNumber || !otp || !newPassword) {
+      return NextResponse.json({ error: 'Phone number, OTP, and new password are required.' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { phoneNumber },
-    });
+    if (newPassword.length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters long.' }, { status: 400 });
+    }
+
+    // --- Find User and Token ---
+    const user = await prisma.user.findUnique({ where: { phoneNumber } });
 
     if (!user) {
-      return NextResponse.json({ message: 'Invalid token or phone number' }, { status: 400 });
+      // Security: Do not reveal that the user doesn't exist.
+      return NextResponse.json({ error: 'Invalid OTP or phone number.' }, { status: 400 });
     }
 
-    const resetToken = await prisma.passwordResetToken.findFirst({
+    const tokenRecord = await prisma.passwordResetToken.findFirst({
       where: {
         userId: user.id,
+        purpose: 'PASSWORD_RESET',
+        expiresAt: { gt: new Date() }, // Check if the token is not expired
       },
       orderBy: {
-        expires: 'desc',
+        createdAt: 'desc', // Get the most recent token
       },
     });
 
-    if (!resetToken) {
-      return NextResponse.json({ message: 'Invalid token or phone number' }, { status: 400 });
+    if (!tokenRecord) {
+      return NextResponse.json({ error: 'Invalid or expired OTP.' }, { status: 400 });
+    }
+    
+    // --- Brute-Force Protection ---
+    if (tokenRecord.attempts >= MAX_OTP_ATTEMPTS) {
+        return NextResponse.json({ error: 'Too many incorrect attempts. Please request a new OTP.' }, { status: 429 });
     }
 
-    if (new Date() > resetToken.expires) {
-      return NextResponse.json({ message: 'Token has expired' }, { status: 400 });
+    // --- Verify OTP ---
+    const hashedOtp = hashOTP(otp);
+
+    // Note: For production-grade security, consider using a timing-safe comparison function
+    // like `crypto.timingSafeEqual` to prevent timing attacks, though it requires equal-length buffers.
+    const isOtpValid = (hashedOtp === tokenRecord.token);
+
+    if (!isOtpValid) {
+      // Increment the attempt counter
+      await prisma.passwordResetToken.update({
+        where: { id: tokenRecord.id },
+        data: { attempts: { increment: 1 } },
+      });
+      return NextResponse.json({ error: 'Invalid OTP or phone number.' }, { status: 400 });
     }
 
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-
-    if (hashedToken !== resetToken.token) {
-      return NextResponse.json({ message: 'Invalid token or phone number' }, { status: 400 });
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    // --- Update Password ---
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: { passwordHash: newPasswordHash },
     });
 
-    await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+    // --- Clean Up: Crucial Security Step ---
+    // Delete the token immediately after successful use.
+    await prisma.passwordResetToken.delete({
+      where: { id: tokenRecord.id },
+    });
 
-    return NextResponse.json({ message: 'Password has been reset successfully' });
+    return NextResponse.json({ message: 'Password has been reset successfully.' });
 
   } catch (error) {
-    console.error('Reset password error:', error);
-    return NextResponse.json({ message: 'An unexpected error occurred' }, { status: 500 });
+    console.error('Reset Password Error:', error);
+    return NextResponse.json({ error: 'An unexpected error occurred. Please try again later.' }, { status: 500 });
   }
 }

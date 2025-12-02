@@ -51,7 +51,7 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { id: tempId, name, location } = await request.json();
+  const { id: tempId, name, location, gpsAddress, latitude, longitude } = await request.json();
 
   if (!name) {
     await logAction('WARN', 'Farm creation attempt with no name', { userId: user.id });
@@ -65,6 +65,9 @@ export async function POST(request) {
           id: tempId,
           name,
           location,
+          gpsAddress,
+          latitude,
+          longitude,
           owner: {
             connect: { id: user.id },
           },

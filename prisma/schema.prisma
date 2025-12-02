@@ -97,12 +97,15 @@ enum TransactionType {
 // CORE MODELS
 
 model Farm {
-  id        String   @id @default(cuid())
-  name      String
-  location  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ownerId   String
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  gpsAddress  String?  @map("gps_address")
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     String
 
   owner               User                 @relation("FarmOwner", fields: [ownerId], references: [id])
   users               FarmUser[]
@@ -122,6 +125,7 @@ model Farm {
   farmSummary         FarmSummary?
 
   @@index([name])
+  @@index([latitude, longitude])
 }
 
 model FarmSummary {
@@ -227,12 +231,23 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum OtpPurpose {
+  PASSWORD_RESET
+  PASSWORD_CHANGE
+}
+
 model PasswordResetToken {
-  id      String   @id @default(cuid())
-  token   String   @unique
-  expires DateTime
-  userId  String
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String     @id @default(cuid())
+  token     String     @unique
+  expiresAt DateTime
+  userId    String
+  purpose   OtpPurpose
+  attempts  Int        @default(0)
+  createdAt DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
 }
 
 model Subscription {

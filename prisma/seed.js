@@ -283,94 +283,398 @@ async function seedBenchmarks() {
   const genericLayer = await prisma.breed.findUnique({ where: { name: 'Generic Layer' } });
   const genericBroiler = await prisma.breed.findUnique({ where: { name: 'Generic Broiler' } });
   const genericBreeder = await prisma.breed.findUnique({ where: { name: 'Generic Breeder' } });
+  const whiteLeghorn = await prisma.breed.findUnique({ where: { name: 'White Leghorn' } });
+  const lohmannBrown = await prisma.breed.findUnique({ where: { name: 'Lohmann Brown' } });
+  const ross308 = await prisma.breed.findUnique({ where: { name: 'Ross 308' } });
 
-  // ISA Brown (Layer) - Sample Data
+  // ============================================
+  // ISA BROWN (Layer) - Based on official ISA Brown performance guide
+  // ============================================
   if (isaBrown) {
-    for (let week = 1; week <= 90; week++) {
+    // Rearing period (weeks 1-18) with accurate growth data
+    const isaBrownRearing = [
+      { week: 1, feedIntake: 11, bodyWeight: 65 },
+      { week: 2, feedIntake: 17, bodyWeight: 110 },
+      { week: 3, feedIntake: 25, bodyWeight: 195 },
+      { week: 4, feedIntake: 32, bodyWeight: 285 },
+      { week: 5, feedIntake: 37, bodyWeight: 380 },
+      { week: 6, feedIntake: 42, bodyWeight: 470 },
+      { week: 7, feedIntake: 46, bodyWeight: 560 },
+      { week: 8, feedIntake: 50, bodyWeight: 650 },
+      { week: 9, feedIntake: 54, bodyWeight: 740 },
+      { week: 10, feedIntake: 58, bodyWeight: 830 },
+      { week: 11, feedIntake: 61, bodyWeight: 920 },
+      { week: 12, feedIntake: 64, bodyWeight: 1010 },
+      { week: 13, feedIntake: 67, bodyWeight: 1095 },
+      { week: 14, feedIntake: 70, bodyWeight: 1180 },
+      { week: 15, feedIntake: 73, bodyWeight: 1265 },
+      { week: 16, feedIntake: 76, bodyWeight: 1350 },
+      { week: 17, feedIntake: 80, bodyWeight: 1430 },
+      { week: 18, feedIntake: 84, bodyWeight: 1500 },
+    ];
+
+    for (const data of isaBrownRearing) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: isaBrown.id, week: data.week } },
+        update: {},
+        create: {
+          breedId: isaBrown.id,
+          week: data.week,
+          expectedFeedIntake: data.feedIntake,
+          expectedBodyWeight: data.bodyWeight,
+          expectedEggProductionRate: 0, // No egg production during rearing
+        },
+      });
+    }
+
+    // Laying period (weeks 19-90) - ISA Brown can produce up to 500 eggs
+    for (let week = 19; week <= 90; week++) {
+      let feedIntake, bodyWeight, eggProduction;
+
+      // Feed intake stabilizes at 110-115g/day during lay
+      if (week >= 19 && week <= 22) {
+        feedIntake = 84 + (week - 18) * 7; // Ramp up: 91, 98, 105, 112
+      } else {
+        feedIntake = 112; // Peak feed intake
+      }
+
+      // Body weight increases gradually during lay
+      if (week <= 30) {
+        bodyWeight = 1500 + (week - 18) * 35; // Reaches ~1900g by week 30
+      } else {
+        bodyWeight = 1920 + (week - 30) * 8; // Slow increase, peaks ~2400g
+      }
+
+      // Egg production curve - ISA Browns reach 96% peak production
+      if (week < 20) {
+        eggProduction = 0;
+      } else if (week === 20) {
+        eggProduction = 0.50; // 50% at point of lay
+      } else if (week >= 21 && week <= 25) {
+        // Rapid increase to peak
+        eggProduction = 0.50 + (week - 20) * 0.092; // Reaches 96% by week 25
+      } else if (week > 25 && week <= 45) {
+        eggProduction = 0.96; // Sustained peak production
+      } else if (week > 45 && week <= 60) {
+        // Gradual decline
+        eggProduction = 0.96 - (week - 45) * 0.005; // Down to 88.5% by week 60
+      } else {
+        // Continued decline
+        eggProduction = Math.max(0.70, 0.885 - (week - 60) * 0.006); // Minimum 70%
+      }
+
       await prisma.standardBenchmark.upsert({
         where: { breedId_week: { breedId: isaBrown.id, week } },
         update: {},
         create: {
           breedId: isaBrown.id,
           week: week,
-          expectedFeedIntake: 18 + 0.5 * week * 5, // g/day, simplistic growth
-          expectedBodyWeight: 70 + week * 20, // g, simplistic growth
-          expectedEggProductionRate: week > 18 ? Math.min(0.95, (week - 18) * 0.05) : 0, // %
+          expectedFeedIntake: feedIntake,
+          expectedBodyWeight: bodyWeight,
+          expectedEggProductionRate: eggProduction,
         },
       });
     }
   }
 
-  // Cobb 500 (Broiler) - Sample Data
-  if (cobb500) {
-    for (let week = 1; week <= 8; week++) {
+  // ============================================
+  // WHITE LEGHORN (Layer) - Lighter, higher egg production
+  // ============================================
+  if (whiteLeghorn) {
+    for (let week = 1; week <= 90; week++) {
+      let feedIntake, bodyWeight, eggProduction;
+
+      // Feed intake - lighter birds eat less
+      if (week <= 18) {
+        feedIntake = 10 + week * 4; // Gradual increase to ~82g by week 18
+      } else if (week > 18 && week <= 22) {
+        feedIntake = 82 + (week - 18) * 5; // Ramp up to ~102g
+      } else {
+        feedIntake = 102; // Lower than ISA Brown (lighter bird)
+      }
+
+      // Body weight - White Leghorns are lighter
+      if (week <= 18) {
+        bodyWeight = 55 + week * 68; // Reaches ~1280g by week 18
+      } else if (week <= 30) {
+        bodyWeight = 1280 + (week - 18) * 30; // Reaches ~1640g by week 30
+      } else {
+        bodyWeight = 1640 + (week - 30) * 6; // Peaks at ~2000g
+      }
+
+      // Egg production - White Leghorns excel at egg numbers
+      if (week < 21) {
+        eggProduction = 0;
+      } else if (week === 21) {
+        eggProduction = 0.55; // 55% at point of lay
+      } else if (week >= 22 && week <= 26) {
+        eggProduction = 0.55 + (week - 21) * 0.082; // Reaches 96% by week 26
+      } else if (week > 26 && week <= 50) {
+        eggProduction = 0.96; // Extended peak production
+      } else if (week > 50 && week <= 65) {
+        eggProduction = 0.96 - (week - 50) * 0.004; // Down to 90% by week 65
+      } else {
+        eggProduction = Math.max(0.75, 0.90 - (week - 65) * 0.006); // Minimum 75%
+      }
+
       await prisma.standardBenchmark.upsert({
-        where: { breedId_week: { breedId: cobb500.id, week } },
+        where: { breedId_week: { breedId: whiteLeghorn.id, week } },
         update: {},
         create: {
-          breedId: cobb500.id,
+          breedId: whiteLeghorn.id,
           week: week,
-          expectedFeedIntake: 25 + week * 22, // g/day, simplistic growth
-          expectedBodyWeight: 150 + week * 450, // g, simplistic growth
+          expectedFeedIntake: feedIntake,
+          expectedBodyWeight: bodyWeight,
+          expectedEggProductionRate: eggProduction,
         },
       });
     }
   }
-  
-  // Generic Layer
+
+  // ============================================
+  // LOHMANN BROWN (Layer) - Similar to ISA Brown
+  // ============================================
+  if (lohmannBrown) {
+    for (let week = 1; week <= 90; week++) {
+      let feedIntake, bodyWeight, eggProduction;
+
+      // Feed intake - similar to ISA Brown
+      if (week <= 18) {
+        feedIntake = 11 + week * 4.3; // Reaches ~88g by week 18
+      } else if (week > 18 && week <= 23) {
+        feedIntake = 88 + (week - 18) * 5.8; // Ramps to ~117g by week 23
+      } else {
+        feedIntake = 117; // Slightly higher than ISA Brown
+      }
+
+      // Body weight - similar to ISA Brown
+      if (week <= 18) {
+        bodyWeight = 65 + week * 82; // Reaches ~1540g by week 18
+      } else if (week <= 30) {
+        bodyWeight = 1540 + (week - 18) * 33; // Reaches ~1936g by week 30
+      } else {
+        bodyWeight = 1936 + (week - 30) * 7; // Peaks ~2356g
+      }
+
+      // Egg production - Lohmann Browns have excellent persistency
+      if (week < 20) {
+        eggProduction = 0;
+      } else if (week === 20) {
+        eggProduction = 0.50;
+      } else if (week >= 21 && week <= 25) {
+        eggProduction = 0.50 + (week - 20) * 0.088; // Reaches 94% by week 25
+      } else if (week > 25 && week <= 42) {
+        eggProduction = 0.94; // Sustained peak
+      } else if (week > 42 && week <= 60) {
+        eggProduction = 0.94 - (week - 42) * 0.005; // Down to 85% by week 60
+      } else {
+        eggProduction = Math.max(0.70, 0.85 - (week - 60) * 0.005); // Minimum 70%
+      }
+
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: lohmannBrown.id, week } },
+        update: {},
+        create: {
+          breedId: lohmannBrown.id,
+          week: week,
+          expectedFeedIntake: feedIntake,
+          expectedBodyWeight: bodyWeight,
+          expectedEggProductionRate: eggProduction,
+        },
+      });
+    }
+  }
+
+  // ============================================
+  // GENERIC LAYER - Average of commercial layers
+  // ============================================
   if (genericLayer) {
     for (let week = 1; week <= 90; week++) {
+      let feedIntake, bodyWeight, eggProduction;
+
+      if (week <= 18) {
+        feedIntake = 10 + week * 4.1;
+        bodyWeight = 60 + week * 75;
+      } else if (week > 18 && week <= 22) {
+        feedIntake = 84 + (week - 18) * 6;
+        bodyWeight = 1410 + (week - 18) * 32;
+      } else {
+        feedIntake = 108;
+        bodyWeight = 1538 + (week - 22) * 10;
+      }
+
+      if (week < 21) {
+        eggProduction = 0;
+      } else if (week >= 21 && week <= 26) {
+        eggProduction = (week - 20) * 0.16; // Reaches 92% by week 26
+      } else if (week > 26 && week <= 48) {
+        eggProduction = 0.92;
+      } else {
+        eggProduction = Math.max(0.68, 0.92 - (week - 48) * 0.006);
+      }
+
       await prisma.standardBenchmark.upsert({
         where: { breedId_week: { breedId: genericLayer.id, week } },
         update: {},
         create: {
           breedId: genericLayer.id,
           week: week,
-          expectedFeedIntake: 20 + 0.5 * week * 5, // g/day, slightly lower than isa brown
-          expectedBodyWeight: 65 + week * 19, // g, slightly lower
-          expectedEggProductionRate: week > 20 ? Math.min(0.92, (week - 20) * 0.045) : 0, // starts later, slightly lower peak
+          expectedFeedIntake: feedIntake,
+          expectedBodyWeight: bodyWeight,
+          expectedEggProductionRate: eggProduction,
         },
       });
     }
   }
 
-  // Generic Broiler
-  if (genericBroiler) {
-    for (let week = 1; week <= 8; week++) {
+  // ============================================
+  // COBB 500 (Broiler) - Based on official Cobb 500 standards
+  // ============================================
+  if (cobb500) {
+    const cobb500Data = [
+      // Week, Daily Feed Intake (g), Body Weight (g)
+      { week: 1, feedIntake: 20, bodyWeight: 185 },   // Day 7
+      { week: 2, feedIntake: 40, bodyWeight: 465 },   // Day 14
+      { week: 3, feedIntake: 65, bodyWeight: 865 },   // Day 21
+      { week: 4, feedIntake: 90, bodyWeight: 1353 },  // Day 28
+      { week: 5, feedIntake: 115, bodyWeight: 1895 }, // Day 35
+      { week: 6, feedIntake: 135, bodyWeight: 2482 }, // Day 42 (typical market weight)
+      { week: 7, feedIntake: 152, bodyWeight: 3043 }, // Day 49
+      { week: 8, feedIntake: 165, bodyWeight: 3596 }, // Day 56
+    ];
+
+    for (const data of cobb500Data) {
       await prisma.standardBenchmark.upsert({
-        where: { breedId_week: { breedId: genericBroiler.id, week } },
+        where: { breedId_week: { breedId: cobb500.id, week: data.week } },
+        update: {},
+        create: {
+          breedId: cobb500.id,
+          week: data.week,
+          expectedFeedIntake: data.feedIntake,
+          expectedBodyWeight: data.bodyWeight,
+          expectedEggProductionRate: 0, // Broilers don't lay eggs
+        },
+      });
+    }
+  }
+
+  // ============================================
+  // ROSS 308 (Broiler) - Based on Ross 308 performance objectives
+  // ============================================
+  if (ross308) {
+    const ross308Data = [
+      // Week, Daily Feed Intake (g), Body Weight (g)
+      { week: 1, feedIntake: 17, bodyWeight: 160 },   // Day 7
+      { week: 2, feedIntake: 38, bodyWeight: 450 },   // Day 14
+      { week: 3, feedIntake: 63, bodyWeight: 840 },   // Day 21
+      { week: 4, feedIntake: 88, bodyWeight: 1320 },  // Day 28
+      { week: 5, feedIntake: 112, bodyWeight: 1850 }, // Day 35
+      { week: 6, feedIntake: 132, bodyWeight: 2430 }, // Day 42
+      { week: 7, feedIntake: 149, bodyWeight: 2980 }, // Day 49
+      { week: 8, feedIntake: 163, bodyWeight: 3520 }, // Day 56
+    ];
+
+    for (const data of ross308Data) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: ross308.id, week: data.week } },
+        update: {},
+        create: {
+          breedId: ross308.id,
+          week: data.week,
+          expectedFeedIntake: data.feedIntake,
+          expectedBodyWeight: data.bodyWeight,
+          expectedEggProductionRate: 0,
+        },
+      });
+    }
+  }
+
+  // ============================================
+  // GENERIC BROILER - Average performance
+  // ============================================
+  if (genericBroiler) {
+    const genericBroilerData = [
+      { week: 1, feedIntake: 18, bodyWeight: 170 },
+      { week: 2, feedIntake: 39, bodyWeight: 455 },
+      { week: 3, feedIntake: 64, bodyWeight: 850 },
+      { week: 4, feedIntake: 89, bodyWeight: 1335 },
+      { week: 5, feedIntake: 113, bodyWeight: 1870 },
+      { week: 6, feedIntake: 133, bodyWeight: 2450 },
+      { week: 7, feedIntake: 150, bodyWeight: 3010 },
+      { week: 8, feedIntake: 164, bodyWeight: 3555 },
+    ];
+
+    for (const data of genericBroilerData) {
+      await prisma.standardBenchmark.upsert({
+        where: { breedId_week: { breedId: genericBroiler.id, week: data.week } },
         update: {},
         create: {
           breedId: genericBroiler.id,
-          week: week,
-          expectedFeedIntake: 22 + week * 20, // g/day, slightly lower
-          expectedBodyWeight: 140 + week * 430, // g, slightly lower
+          week: data.week,
+          expectedFeedIntake: data.feedIntake,
+          expectedBodyWeight: data.bodyWeight,
+          expectedEggProductionRate: 0,
         },
       });
     }
   }
 
-  // Generic Breeder
+  // ============================================
+  // GENERIC BREEDER - Breeder performance
+  // ============================================
   if (genericBreeder) {
-    for (let week = 1; week <= 100; week++) { // Breeders have a longer life
+    for (let week = 1; week <= 100; week++) {
+      let feedIntake, bodyWeight, eggProduction;
+
+      // Breeder rearing phase (0-20 weeks) - controlled growth
+      if (week <= 4) {
+        feedIntake = 15 + week * 5; // 20-35g
+        bodyWeight = 80 + week * 70; // 150-360g
+      } else if (week > 4 && week <= 20) {
+        feedIntake = 35 + (week - 4) * 4; // 39-99g
+        bodyWeight = 360 + (week - 4) * 120; // 480-2280g
+      }
+      // Pre-lay (21-24 weeks)
+      else if (week > 20 && week <= 24) {
+        feedIntake = 99 + (week - 20) * 13; // 112-151g
+        bodyWeight = 2280 + (week - 20) * 80; // 2360-2600g
+      }
+      // Laying phase (25+ weeks)
+      else {
+        feedIntake = 160 + (week > 40 ? (week - 40) * 0.5 : 0); // Increases slightly, max 170g
+        feedIntake = Math.min(feedIntake, 170);
+        bodyWeight = 2600 + (week - 24) * 15; // Continues to grow slowly
+        bodyWeight = Math.min(bodyWeight, 4000); // Cap at 4kg
+      }
+
+      // Egg production for breeders
+      if (week < 24) {
+        eggProduction = 0; // No production before 24 weeks
+      } else if (week >= 24 && week <= 30) {
+        eggProduction = (week - 23) * 0.12; // Ramp up to 84% by week 30
+      } else if (week > 30 && week <= 50) {
+        eggProduction = 0.84; // Peak production lower than layers
+      } else if (week > 50 && week <= 65) {
+        eggProduction = 0.84 - (week - 50) * 0.008; // Decline to 72%
+      } else {
+        eggProduction = Math.max(0.60, 0.72 - (week - 65) * 0.004); // Minimum 60%
+      }
+
       await prisma.standardBenchmark.upsert({
         where: { breedId_week: { breedId: genericBreeder.id, week } },
         update: {},
         create: {
           breedId: genericBreeder.id,
           week: week,
-          // Breeder feed intake is carefully managed to control weight
-          expectedFeedIntake: 30 + week * 1.5, 
-          // Body weight is higher than layers but controlled
-          expectedBodyWeight: 80 + week * 25, 
-          // Egg production starts later and might have a different curve
-          expectedEggProductionRate: week > 24 ? Math.min(0.88, (week - 24) * 0.04) : 0,
+          expectedFeedIntake: feedIntake,
+          expectedBodyWeight: bodyWeight,
+          expectedEggProductionRate: eggProduction,
         },
       });
     }
   }
 
-  console.log('Benchmarks seeded.');
+  console.log('Benchmarks seeded with accurate data.');
 }
 
 

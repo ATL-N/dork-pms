@@ -1,5 +1,16 @@
 # /etc/crontabs/root
-# Run every day at 8:00 AM
-0 8 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" http://dorkpf-app:3000/api/notifications/trigger
+
+# Scheduled Notification Jobs
+# 7:00 AM - Morning Check (Health Tasks)
+0 7 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"morning"}' http://dorkpf-app:3000/api/notifications/trigger
+
+# 1:00 PM (13:00) - Midday Check (e.g., Missing Feed)
+0 13 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"midday"}' http://dorkpf-app:3000/api/notifications/trigger
+
+# 7:00 PM (19:00) - Evening Check (Low Stock)
+0 19 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"evening"}' http://dorkpf-app:3000/api/notifications/trigger
+
+# 8:00 PM (20:00) - Final Feed Check
+0 20 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"final_feed"}' http://dorkpf-app:3000/api/notifications/trigger
 
 # Add a blank line at the end of the file for cron

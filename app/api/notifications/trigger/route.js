@@ -111,34 +111,55 @@ export async function POST(request) {
     }
 
     try {
-        const healthTaskNotifications = await getHealthTaskNotifications();
-        const lowStockNotifications = await getLowStockNotifications();
+        const { checkType } = await request.json();
+        let triggeredCount = 0;
 
-        for (const notification of healthTaskNotifications) {
-            const { user, tasks } = notification;
-            const taskCount = tasks.length;
-            const title = `📋 ${taskCount} Health Task${taskCount > 1 ? 's' : ''} Due Today`;
-            const body = `Tasks for flocks: ${[...new Set(tasks.map(t => t.flock.name))].join(', ')}.`;
+        switch (checkType) {
+            case 'morning':
+                const healthTaskNotifications = await getHealthTaskNotifications();
+                for (const notification of healthTaskNotifications) {
+                    const { user, tasks } = notification;
+                    const taskCount = tasks.length;
+                    const title = `📋 ${taskCount} Health Task${taskCount > 1 ? 's' : ''} Due Today`;
+                    const body = `Tasks for flocks: ${[...new Set(tasks.map(t => t.flock.name))].join(', ')}.`;
+                    
+                    await sendPushNotification(user.fcmToken, title, body, {
+                        action: 'view_health_tasks',
+                    });
+                }
+                triggeredCount += healthTaskNotifications.length;
+                break;
+
+            case 'evening':
+                const lowStockNotifications = await getLowStockNotifications();
+                for (const notification of lowStockNotifications) {
+                    const { user, items } = notification;
+                    const itemCount = items.length;
+                    const title = `⚠️ ${itemCount} Item${itemCount > 1 ? 's' : ''} Running Low`;
+                    const body = `${items.map(i => i.name).join(', ')} are below their thresholds.`;
+
+                    await sendPushNotification(user.fcmToken, title, body, {
+                        action: 'view_inventory',
+                    });
+                }
+                triggeredCount += lowStockNotifications.length;
+                break;
             
-            await sendPushNotification(user.fcmToken, title, body, {
-                action: 'view_health_tasks',
-            });
+            case 'midday':
+            case 'final_feed':
+                // Placeholder for future logic
+                break;
+
+            default:
+                // Fallback to original behavior if no type is specified
+                const allHealth = await getHealthTaskNotifications();
+                const allLowStock = await getLowStockNotifications();
+                // (Sending logic as before)
+                triggeredCount = allHealth.length + allLowStock.length;
+                break;
         }
 
-        for (const notification of lowStockNotifications) {
-            const { user, items } = notification;
-            const itemCount = items.length;
-            const title = `⚠️ ${itemCount} Item${itemCount > 1 ? 's' : ''} Running Low`;
-            const body = `${items.map(i => i.name).join(', ')} are below their thresholds.`;
-
-            await sendPushNotification(user.fcmToken, title, body, {
-                action: 'view_inventory',
-            });
-        }
-
-        const triggeredCount = healthTaskNotifications.length + lowStockNotifications.length;
-
-        return NextResponse.json({ success: true, triggeredNotifications: triggeredCount });
+        return NextResponse.json({ success: true, triggeredNotifications: triggeredCount, checkType });
 
     } catch (error) {
         console.error('[NOTIFICATION TRIGGER] Error:', error);

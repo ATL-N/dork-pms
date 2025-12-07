@@ -2,7 +2,7 @@
 
 # Scheduled Notification Jobs
 # 7:00 AM - Morning Check (Health Tasks)
-0 7 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"morning"}' http://dorkpf-app:3000/api/notifications/trigger
+0 8 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"morning"}' http://dorkpf-app:3000/api/notifications/trigger
 
 # 1:00 PM (13:00) - Midday Check (e.g., Missing Feed)
 0 13 * * * curl -X POST -H "Authorization: Bearer $NOTIFICATION_TRIGGER_SECRET" -H "Content-Type: application/json" -d '{"checkType":"midday"}' http://dorkpf-app:3000/api/notifications/trigger

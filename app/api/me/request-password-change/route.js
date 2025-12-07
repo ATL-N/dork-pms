@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import crypto from 'crypto';
 import { getCurrentUser } from '@/app/lib/session';
+import { rateLimiter } from '@/app/lib/redis';
 
 function generateOTP(length = 6) {
   const digits = '0123456789';
@@ -32,6 +33,16 @@ export async function POST(request) {
     if (!user || !user.phoneNumber) {
         return NextResponse.json({ error: 'User not found or no phone number on file.' }, { status: 400 });
     }
+
+    // --- Rate Limiting ---
+    const limit = 2; // Max 2 requests
+    const duration = 86400; // per day (24 hours in seconds)
+    const { allowed } = await rateLimiter('sms-otp-change', user.phoneNumber, limit, duration);
+
+    if (!allowed) {
+      return NextResponse.json({ message: 'You have reached the maximum number of security code requests for today. Please try again later.' }, { status: 429 });
+    }
+    // --- End Rate Limiting ---
 
     // Clean up old tokens
     await prisma.passwordResetToken.deleteMany({

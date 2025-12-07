@@ -2,8 +2,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { writeFile } from 'fs/promises';
-import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -16,29 +14,35 @@ export async function POST(req) {
             return NextResponse.json({ message: 'Qualification document is required.' }, { status: 400 });
         }
 
-        // --- File Handling ---
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        // --- Upload file to Backblaze via internal API route ---
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
 
-        // Create a unique filename to avoid overwrites
-        const filename = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-        const uploadPath = path.join(process.cwd(), 'public/uploads/vet-qualifications', filename);
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
+            method: 'POST',
+            body: uploadFormData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+
+        if (!uploadResponse.ok || !uploadResult.success) {
+            console.error('File upload failed:', uploadResult);
+            return NextResponse.json({ message: 'Failed to upload qualification document.' }, { status: 500 });
+        }
         
-        // Ensure the directory exists
-        await require('fs').promises.mkdir(path.dirname(uploadPath), { recursive: true });
-
-        await writeFile(uploadPath, buffer);
-        const qualificationUrl = `/uploads/vet-qualifications/${filename}`;
+        const qualificationUrl = uploadResult.url;
 
         // --- User & Profile Creation ---
         const name = data.get('name');
         const email = data.get('email');
+        const phoneNumber = data.get('phoneNumber');
         const password = data.get('password');
         const specialization = data.get('specialization');
         const yearsExperience = parseInt(data.get('yearsExperience'), 10);
         const licenseNumber = data.get('licenseNumber');
 
-        if (!name || !email || !password || !specialization || isNaN(yearsExperience)) {
+        if (!name || !email || !password || !specialization || !phoneNumber || isNaN(yearsExperience)) {
             return NextResponse.json({ message: 'Missing required fields.' }, { status: 400 });
         }
 
@@ -53,6 +57,7 @@ export async function POST(req) {
             data: {
                 name,
                 email,
+                phoneNumber,
                 passwordHash,
                 userType: 'VET',
                 vetProfile: {
@@ -60,7 +65,7 @@ export async function POST(req) {
                         specialization,
                         yearsExperience,
                         licenseNumber,
-                        qualificationUrl,
+                        qualificationUrl, // Use the URL from the upload service
                         approvalStatus: 'PENDING',
                     },
                 },

@@ -31,6 +31,8 @@ services:
     depends_on:
       dorkpf-db:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: always
     networks:
       - traefik-public
@@ -82,8 +84,18 @@ services:
     networks:
       - traefik-public
 
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - traefik-public
+    volumes:
+      - redis-data:/data
+
 volumes:
   postgres-data-dorkpf:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

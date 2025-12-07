@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import crypto from 'crypto';
+import { rateLimiter } from '@/app/lib/redis';
 
 /**
  * Generates a secure, digits-only OTP of a specified length.
@@ -34,6 +35,16 @@ export async function POST(request) {
     if (!phoneNumber) {
       return NextResponse.json({ error: 'Phone number is required.' }, { status: 400 });
     }
+
+    // --- Rate Limiting ---
+    const limit = 2; // Max 2 requests
+    const duration = 86400; // per day (24 hours in seconds)
+    const { allowed } = await rateLimiter('sms-otp-reset', phoneNumber, limit, duration);
+
+    if (!allowed) {
+      return NextResponse.json({ message: 'You have reached the maximum number of password reset requests for today. Please try again later.' }, { status: 429 });
+    }
+    // --- End Rate Limiting ---
 
     // Find the user by their phone number
     const user = await prisma.user.findUnique({

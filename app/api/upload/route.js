@@ -1,39 +1,47 @@
-// app/api/upload/route.js
-import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
+const s3Client = new S3Client({
+  region: process.env.B2_ENDPOINT.split(".")[1],
+  endpoint: `https://${process.env.B2_ENDPOINT}`,
+  credentials: {
+    accessKeyId: process.env.B2_APPLICATION_KEY_ID,
+    secretAccessKey: process.env.B2_APPLICATION_KEY,
+  },
+});
 
 export async function POST(request) {
+  try {
     const formData = await request.formData();
-    const file = formData.get('file');
+    const file = formData.get("file");
 
     if (!file) {
-        return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
     }
 
-    try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `${Date.now()}-${file.name}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat');
-        
-        // Ensure the upload directory exists
-        await fs.mkdir(uploadDir, { recursive: true });
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-        const newPath = path.join(uploadDir, fileName);
+    const filename = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
 
-        await fs.writeFile(newPath, buffer);
+    const command = new PutObjectCommand({
+      Bucket: process.env.B2_BUCKET_NAME,
+      Key: `vet-qualifications/${filename}`, // Added a folder for organization
+      Body: buffer,
+      ContentType: file.type,
+    });
 
-        const fileUrl = `/uploads/chat/${fileName}`;
+    await s3Client.send(command);
 
-        return NextResponse.json({ success: true, url: fileUrl, type: file.type });
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        return NextResponse.json({ success: false, error: 'File upload failed' }, { status: 500 });
-    }
+    // Construct the public URL for the file
+    const url = `https://f005.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/vet-qualifications/${filename}`;
+
+    return NextResponse.json({ success: true, url });
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return NextResponse.json(
+      { error: "Error uploading file.", details: error.message },
+      { status: 500 }
+    );
+  }
 }

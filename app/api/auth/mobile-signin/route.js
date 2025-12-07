@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import * as jose from 'jose';
+import { rateLimiter, resetRateLimit } from '@/app/lib/redis';
 
 const prisma = new PrismaClient();
 
@@ -13,6 +14,16 @@ export async function POST(request) {
     if (!email || !password) {
       return NextResponse.json({ message: 'Email/Phone and password are required' }, { status: 400 });
     }
+
+    // --- Rate Limiting ---
+    const limit = 3;
+    const duration = 1200; // 20 minutes
+    const { allowed, remaining } = await rateLimiter('login-attempt', email, limit, duration);
+
+    if (!allowed) {
+      return NextResponse.json({ message: 'Too many login attempts. Please try again in 20 minutes.' }, { status: 429 });
+    }
+    // --- End Rate Limiting ---
 
     // 1. Find the user by email or phone number
     const isEmail = email.includes('@');
@@ -29,8 +40,25 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
+
     // 2. Compare the provided password with the stored hash
     const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordsMatch) {
+      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // --- Login Successful: Reset Rate Limiter ---
+    await resetRateLimit('login-attempt', email);
+    // --- End Reset ---
+
+    // 3. If credentials are valid, create a JWT using 'jose'
+    const payload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      userType: user.userType,
+    };
 
     if (!passwordsMatch) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });

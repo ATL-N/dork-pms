@@ -60,18 +60,6 @@ export async function POST(request) {
       userType: user.userType,
     };
 
-    if (!passwordsMatch) {
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
-    }
-
-    // 3. If credentials are valid, create a JWT using 'jose'
-    const payload = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      userType: user.userType,
-    };
-
     const secretString = process.env.NEXTAUTH_SECRET;
     if (!secretString) {
         console.error('JWT secret is not defined. Please set NEXTAUTH_SECRET in your .env file');

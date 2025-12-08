@@ -1,12 +1,30 @@
 // lib/redis.js
 import Redis from 'ioredis';
 
-// Create a single, reusable Redis instance.
-// It will automatically connect to the 'redis' service host because they are on the same Docker network.
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'redis',
-  port: 6379,
-});
+let redis;
+
+function getRedisClient() {
+  if (!redis) {
+    // Using lazyConnect to prevent the client from connecting automatically.
+    // The connection will be established only when a command is issued.
+    // This prevents connection attempts during the build phase.
+    redis = new Redis({
+      host: process.env.REDIS_HOST || 'redis',
+      port: 6379,
+      lazyConnect: true,
+      connectTimeout: 2000, // Short timeout
+    });
+
+    redis.on('error', (err) => {
+        // Suppress ECONNREFUSED errors from logging during build
+        if (err.code !== 'ECONNREFUSED') {
+            console.error('Redis error:', err);
+        }
+    });
+  }
+  return redis;
+}
+
 
 /**
  * A generic rate limiter that uses Redis to track and limit actions.
@@ -20,7 +38,12 @@ export async function rateLimiter(action, identifier, limit, durationInSeconds) 
   const key = `rate-limit:${action}:${identifier}`;
   
   try {
-    const pipeline = redis.pipeline();
+    const client = getRedisClient();
+    // The .connect() call is not strictly necessary with lazyConnect, 
+    // but it makes the intent clear and can help catch connection errors early at runtime.
+    await client.connect(); 
+
+    const pipeline = client.pipeline();
     pipeline.incr(key);
     pipeline.expire(key, durationInSeconds);
     const results = await pipeline.exec();
@@ -34,9 +57,13 @@ export async function rateLimiter(action, identifier, limit, durationInSeconds) 
 
     return { allowed: true, remaining: limit - count };
   } catch (error) {
-    console.error("Redis rate limiter error:", error);
-    // If Redis fails, we default to allowing the request to avoid blocking users due to a Redis outage.
-    // In a more critical system, you might want to fail-closed.
+    // If Redis fails (e.g., during build or if the service is down), 
+    // we default to allowing the request to avoid blocking users.
+    if (process.env.NODE_ENV !== 'production' || process.env.CI) {
+      // During build or in non-prod, don't log connection errors
+    } else {
+      console.error("Redis rate limiter error:", error);
+    }
     return { allowed: true, remaining: limit };
   }
 }
@@ -50,10 +77,17 @@ export async function rateLimiter(action, identifier, limit, durationInSeconds) 
 export async function resetRateLimit(action, identifier) {
     const key = `rate-limit:${action}:${identifier}`;
     try {
-        await redis.del(key);
+        const client = getRedisClient();
+        await client.connect();
+        await client.del(key);
     } catch (error) {
-        console.error("Redis reset limit error:", error);
+        if (process.env.NODE_ENV !== 'production' || process.env.CI) {
+            // During build or in non-prod, don't log connection errors
+        } else {
+            console.error("Redis reset limit error:", error);
+        }
     }
 }
 
-export default redis;
+// Keep a default export for compatibility, but it's now a function
+export default getRedisClient;

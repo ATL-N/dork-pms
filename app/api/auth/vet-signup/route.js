@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import * as jose from 'jose';
 
 const prisma = new PrismaClient();
 
@@ -46,9 +47,11 @@ export async function POST(req) {
             return NextResponse.json({ message: 'Missing required fields.' }, { status: 400 });
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findFirst({
+            where: { OR: [{ email }, { phoneNumber }] },
+        });
         if (existingUser) {
-            return NextResponse.json({ message: 'A user with this email already exists.' }, { status: 409 });
+            return NextResponse.json({ message: 'A user with this email or phone number already exists.' }, { status: 409 });
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -65,7 +68,7 @@ export async function POST(req) {
                         specialization,
                         yearsExperience,
                         licenseNumber,
-                        qualificationUrl, // Use the URL from the upload service
+                        qualificationUrl,
                         approvalStatus: 'PENDING',
                     },
                 },
@@ -74,7 +77,7 @@ export async function POST(req) {
 
         // Add user to General Chat
         try {
-            const generalChat = await prisma.conversation.findUnique({
+            const generalChat = await prisma.conversation.findFirst({
                 where: { name: 'General Chat' },
             });
             if (generalChat) {
@@ -89,7 +92,31 @@ export async function POST(req) {
             console.error("Failed to add user to General Chat:", chatError);
         }
 
-        return NextResponse.json({ message: 'Application submitted successfully.' }, { status: 201 });
+        // --- Create JWT for auto-login ---
+        const payload = {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            userType: newUser.userType,
+        };
+
+        const secretString = process.env.NEXTAUTH_SECRET;
+        if (!secretString) {
+            console.error('JWT secret is not defined. Please set NEXTAUTH_SECRET in your .env file');
+            // Still return success, but without a token, so user has to log in manually
+            return NextResponse.json({ message: 'Application submitted! Please log in.' }, { status: 201 });
+        }
+        const secret = new TextEncoder().encode(secretString);
+
+        const token = await new jose.SignJWT(payload)
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('30d')
+            .sign(secret);
+        
+        // --- End Create JWT ---
+
+        return NextResponse.json({ message: 'Application submitted successfully!', token: token }, { status: 201 });
 
     } catch (error) {
         console.error('[API/VET-SIGNUP]', error);

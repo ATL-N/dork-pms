@@ -6,6 +6,30 @@ import { useSession } from 'next-auth/react';
 import { Feather, DollarSign, BarChart2, ShieldCheck, CheckCircle, Menu, X } from 'lucide-react';
 import LoadingSpinner from './components/LoadingSpinner';
 
+const DownloadAppBanner = () => {
+  const apkUrl = "https://f003.backblazeb2.com/file/dorkpms/nkokoapp-v2.apk";
+  return (
+    <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 p-4 flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-lg">Get the Mobile App!</h3>
+          <p className="text-sm">Download the NkokoApp for a better mobile experience.</p>
+        </div>
+        <a
+          href={apkUrl}
+          download
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          Download APK
+        </a>
+      </div>
+    </div>
+  );
+};
+
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -69,6 +93,8 @@ export default function LandingPage() {
           </div>
         )}
       </header>
+      
+      <DownloadAppBanner />
 
       {/* Main Content */}
       <main className="flex-grow">

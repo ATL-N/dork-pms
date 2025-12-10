@@ -62,6 +62,7 @@ export async function middleware(req) {
   // Define API routes that should bypass auth
   const publicApiPaths = [
     "/api/auth",
+    "/api/upload",
     "/api/auth/register-owner-mobile",
     "/api/veterinarians",
     "/api/health",

@@ -21,12 +21,14 @@ export async function GET(request) {
                 id: true,
                 name: true,
                 email: true,
+                phoneNumber: true, // Include phone number
                 userType: true,
-                farms: { // Corrected from farmUsers to farms
+                farms: {
                     select: {
                         farmId: true
                     }
-                }
+                },
+                vetProfile: true // Include the full vet profile
             },
             orderBy: {
                 name: 'asc',
@@ -40,10 +42,15 @@ export async function GET(request) {
         });
         const currentUserFarmIds = new Set(currentUserFarms.map(fu => fu.farmId));
 
-        // Add isSameFarm flag to each user
+        // Add isSameFarm flag and flatten vetProfile to each user
         const usersWithFarmInfo = users.map(u => {
             const hasCommonFarm = u.farms.some(fu => currentUserFarmIds.has(fu.farmId));
-            return { ...u, isSameFarm: hasCommonFarm };
+            const { vetProfile, ...userWithoutProfile } = u;
+            return { 
+                ...userWithoutProfile,
+                ...vetProfile, // Spread all fields from vetProfile
+                isSameFarm: hasCommonFarm,
+            };
         });
 
         return NextResponse.json(usersWithFarmInfo);

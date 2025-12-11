@@ -64,12 +64,19 @@ export async function middleware(req) {
     "/api/auth",
     "/api/upload",
     "/api/auth/register-owner-mobile",
-    "/api/veterinarians",
+    // "/api/veterinarians", // Removed for more granular control
     "/api/health",
     "/api/tasks/templates/sync",
     "/api/notifications/trigger",
     "/api/farms/nearby",
   ];
+
+  // Special handling for veterinarians route: GET is public, other methods are protected
+  if (pathname.startsWith('/api/veterinarians')) {
+    if (req.method === 'GET') {
+      return NextResponse.next();
+    }
+  }
 
   // Check if this is a public API path
   const isPublicApi = publicApiPaths.some(path => pathname.startsWith(path));

@@ -1,0 +1,29 @@
+# Dockerfile.migrate - For running database migrations
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk update && \
+    apk add --no-cache postgresql-client curl && \
+    rm -rf /var/cache/apk/*
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (we need Prisma CLI)
+RUN npm ci && \
+    npm cache clean --force
+
+# Copy Prisma schema
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy migration script
+COPY migrate.sh ./migrate.sh
+RUN chmod +x ./migrate.sh
+
+# Run as root (needed for migrations)
+CMD ["./migrate.sh"]

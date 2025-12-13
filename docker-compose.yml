@@ -1,27 +1,4 @@
 services:
-  # Database migration init container
-  dorkpf-migrate:
-    image: dorkpf-migrate:${VERSION:-latest}
-    build:
-      context: .
-      dockerfile: Dockerfile.migrate
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME:-postgres}
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME:-postgres}
-    depends_on:
-      dorkpf-db:
-        condition: service_healthy
-    networks:
-      - traefik-public
-    restart: "no"  # Only runs once
-    profiles:
-      - migration  # Only runs when explicitly called
-
   dorkpf-app:
     image: dorkpf-nextjs:${VERSION:-latest}
     build:
@@ -43,26 +20,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME:-postgres}
       - PORT=3000
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 2G
-        reservations:
-          cpus: '0.1'
-          memory: 512M
-    # Maximum security options
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    read_only: true  # Read-only filesystem for maximum security
-    tmpfs:
-      - /tmp:mode=1777,size=100m
-      - /app/.next/cache:uid=1001,gid=1001,mode=0755,size=200m
     labels:
       - traefik.enable=true
       - traefik.http.routers.dorkpf-http.rule=Host(`${DOMAIN}`)
@@ -82,12 +39,6 @@ services:
     restart: always
     networks:
       - traefik-public
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 90s
 
   dorkpf-db:
     image: postgres:15-alpine
@@ -95,17 +46,8 @@ services:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME:-postgres}
-      - DB_HOST=dorkpf-db
     volumes:
       - postgres-data-dorkpf:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
-      - ./backups:/app/backups
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 256M
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}" ]
       interval: 5s
@@ -121,14 +63,6 @@ services:
   redis:
     image: redis:alpine
     restart: always
-    ports:
-      - "127.0.0.1:6379:6379"
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 128M
     networks:
       - traefik-public
     volumes:
@@ -143,14 +77,8 @@ services:
       - .env
     environment:
       - NOTIFICATION_TRIGGER_SECRET=${NOTIFICATION_TRIGGER_SECRET}
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
     depends_on:
-      dorkpf-app:
-        condition: service_healthy
+      - dorkpf-app
     restart: always
     networks:
       - traefik-public

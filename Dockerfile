@@ -1,14 +1,19 @@
+# Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install PostgreSQL client and other dependencies
+# Install build dependencies
 RUN apk update && \
-    apk add --no-cache postgresql-client curl
+    apk add --no-cache postgresql-client curl && \
+    rm -rf /var/cache/apk/*
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm ci
+
+# Install dependencies (production only)
+RUN npm ci --only=production && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -24,28 +29,45 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
-# Install PostgreSQL client for production image
+# Install runtime dependencies only
 RUN apk update && \
-    apk add --no-cache postgresql-client curl
+    apk add --no-cache postgresql-client curl dumb-init && \
+    rm -rf /var/cache/apk/*
 
-# Copy necessary files from builder
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/socket-server.js ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
+# Create non-root user and group
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy Prisma schema for migrations
-COPY --from=builder /app/prisma ./prisma
+# Copy standalone application
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 
-# Copy the entrypoint script
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+# Copy other necessary files with correct ownership
+COPY --from=builder --chown=nextjs:nodejs /app/socket-server.js ./socket-server.js
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
+
+# Make entrypoint executable
 RUN chmod +x ./entrypoint.sh
 
+# Copy static assets
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /app/.next/cache && \
+    chown -R nextjs:nodejs /app/.next/cache
+
+# Switch to non-root user
+USER nextjs
+
+# Expose ports
 EXPOSE 3000
 EXPOSE 8080
 
-# Run the entrypoint script
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+# Run the application
 CMD ["./entrypoint.sh"]

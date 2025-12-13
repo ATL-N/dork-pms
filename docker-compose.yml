@@ -22,10 +22,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '0.5'
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: '0.1'
           memory: 512M
     # Add security options
     security_opt:

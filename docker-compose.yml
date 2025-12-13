@@ -15,6 +15,7 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=https://${DOMAIN}
       - NODE_ENV=production
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
       - DB_HOST=${DB_HOST}
       - PORT=3000
     labels:

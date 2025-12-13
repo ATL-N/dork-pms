@@ -19,9 +19,21 @@ do
 done
 echo "Database is ready."
 
+# 2. Run database migrations
+echo "Running database migrations..."
+npx prisma migrate deploy
+
+# 3. Check if the database is seeded
+echo "Seeding database..."
+  npx prisma db seed
+
+# 4. Prune development dependencies to reduce image size
+echo "Pruning development dependencies..."
+npm prune --production
+
 # Unset the password variable for security
 unset PGPASSWORD
 
-# 2. Start the Next.js application
+# 6. Start the Next.js application
 echo "Starting Next.js application..."
 npm start

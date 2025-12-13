@@ -20,6 +20,18 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME:-postgres}
       - PORT=3000
+    # Resource limits - IMPORTANT for production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 2G
+        reservations:
+          cpus: '0.1'
+          memory: 512M
+    # Basic security without read-only complexity
+    security_opt:
+      - no-new-privileges:true
     labels:
       - traefik.enable=true
       - traefik.http.routers.dorkpf-http.rule=Host(`${DOMAIN}`)
@@ -39,6 +51,12 @@ services:
     restart: always
     networks:
       - traefik-public
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   dorkpf-db:
     image: postgres:15-alpine
@@ -48,6 +66,14 @@ services:
       - POSTGRES_DB=${DB_NAME:-postgres}
     volumes:
       - postgres-data-dorkpf:/var/lib/postgresql/data
+      - ./backups:/app/backups
+    # Resource limits for database
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}" ]
       interval: 5s
@@ -63,6 +89,15 @@ services:
   redis:
     image: redis:alpine
     restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    # Resource limits for Redis
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
     networks:
       - traefik-public
     volumes:
@@ -77,8 +112,15 @@ services:
       - .env
     environment:
       - NOTIFICATION_TRIGGER_SECRET=${NOTIFICATION_TRIGGER_SECRET}
+    # Resource limits for cron
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     depends_on:
-      - dorkpf-app
+      dorkpf-app:
+        condition: service_healthy
     restart: always
     networks:
       - traefik-public

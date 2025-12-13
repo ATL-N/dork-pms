@@ -25,15 +25,14 @@ npx prisma migrate deploy
 
 # 3. Check if the database is seeded
 echo "Seeding database..."
-  npx prisma db seed
-
-# 4. Prune development dependencies to reduce image size
-echo "Pruning development dependencies..."
-npm prune --production
+npx prisma db seed || echo "Database already seeded or seeding skipped."
 
 # Unset the password variable for security
 unset PGPASSWORD
 
-# 6. Start the Next.js application
-echo "Starting Next.js application..."
-npm start
+# 4. Start services
+echo "Starting socket server..."
+node socket-server.js &
+
+echo "Starting Next.js standalone server..."
+node server.js

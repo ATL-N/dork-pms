@@ -36,8 +36,31 @@ RUN apk update && \
     apk add --no-cache postgresql-client curl dumb-init && \
     rm -rf /var/cache/apk/*
 
-# Copy everything from builder
-COPY --from=builder /app ./
+# Copy package files for runtime dependencies
+COPY package*.json ./
+
+# Install production dependencies (needed for Prisma)
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Copy Prisma files
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy the standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Copy public folder (CRITICAL - this was missing!)
+COPY --from=builder /app/public ./public
+
+# Copy socket server and entrypoint
+COPY --from=builder /app/socket-server.js ./socket-server.js
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+
+# Make entrypoint executable
+RUN chmod +x ./entrypoint.sh
 
 # Expose ports
 EXPOSE 3000

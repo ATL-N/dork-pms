@@ -69,6 +69,7 @@ export default auth(async function middleware(req) {
     "/api/tasks/templates/sync",
     "/api/notifications/trigger",
     "/api/farms/nearby",
+    // "/api/users",
   ];
 
   // Special handling for veterinarians route: GET is public, other methods are protected

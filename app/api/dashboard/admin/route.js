@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 
 export async function GET(request) {
   const currentUser = await getCurrentUser(request);
+  console.log("currentUserpppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp: ", currentUser)
 
   if (!currentUser || currentUser.userType !== 'ADMIN') {
     return new Response('Unauthorized', { status: 401 });

@@ -34,7 +34,7 @@ export async function POST(request) {
     await s3Client.send(command);
 
     // Construct the public URL for the file
-    const url = `https://f005.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/vet-qualifications/${filename}`;
+    const url = `https://f003.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/vet-qualifications/${filename}`;
 
     return NextResponse.json({ success: true, url });
   } catch (error) {

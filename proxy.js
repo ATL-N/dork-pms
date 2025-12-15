@@ -92,7 +92,7 @@ export default auth(async function middleware(req) {
   if (pathname.startsWith("/api")) {
     const authHeader = req.headers.get("authorization");
 
-    // Try Bearer token authentication (for Flutter app)
+    // 1. Try Bearer token authentication (for mobile app)
     if (authHeader) {
       const payload = await verifyBearerToken(authHeader);
 
@@ -103,11 +103,7 @@ export default auth(async function middleware(req) {
         requestHeaders.set("x-user-email", payload.email || "");
         requestHeaders.set("x-user-type", payload.userType || "");
 
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
+        return NextResponse.next({ request: { headers: requestHeaders } });
       } else {
         // Invalid Bearer token
         return NextResponse.json(
@@ -117,29 +113,23 @@ export default auth(async function middleware(req) {
       }
     }
 
-    // Try session token authentication (for web)
-    const sessionToken = getSessionToken(req);
+    // 2. Try web session authentication (req.auth is populated by the `auth()` wrapper)
+    if (req.auth && req.auth.user) {
+      const user = req.auth.user;
 
-    if (sessionToken) {
-      const payload = await verifySessionToken(sessionToken);
+      const requestHeaders = new Headers(req.headers);
+      requestHeaders.set("x-user-id", user.id || "");
+      requestHeaders.set("x-user-email", user.email || "");
+      requestHeaders.set("x-user-type", user.userType || "");
 
-      if (payload) {
-        // Valid session token - enrich headers
-        const requestHeaders = new Headers(req.headers);
-        requestHeaders.set("x-user-id", String(payload.id || payload.sub));
-        requestHeaders.set("x-user-email", payload.email || "");
-        requestHeaders.set("x-user-type", payload.userType || "");
-
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
-      }
-      // If session token is invalid, fall through to return 401
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
     }
 
-    // No valid authentication found
+    // 3. No valid authentication found
     return NextResponse.json(
       { message: "Authentication required" },
       { status: 401 }

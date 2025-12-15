@@ -21,11 +21,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        const identifier = credentials.email;
+        const isEmail = identifier.includes('@');
+
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: isEmail ? identifier : undefined },
+              { phoneNumber: !isEmail ? identifier : undefined },
+            ],
+          },
         });
 
-        if (!user) {
+        if (!user || !user.passwordHash) {
           return null;
         }
 
@@ -38,6 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        // Return the user object if authentication is successful
         return {
           id: user.id,
           email: user.email,

@@ -15,8 +15,24 @@ export const FarmProvider = ({ children }) => {
   const [currentFarm, setCurrentFarm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const userType = session?.user?.userType;
+
+  const selectFarm = useCallback(async (farmId) => {
+    try {
+        const response = await fetch(`/api/farms/${farmId}/details`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch farm details');
+        }
+        const farmDetails = await response.json();
+        setCurrentFarm(farmDetails);
+        localStorage.setItem('currentFarmId', farmId);
+    } catch (error) {
+        console.error("Failed to select farm:", error);
+    }
+  }, []);
+
   const fetchFarms = useCallback(async () => {
-    if (session) {
+    if (session && userType === 'FARMER') {
       try {
         setIsLoading(true);
         const response = await fetch('/api/user/farms');
@@ -26,7 +42,6 @@ export const FarmProvider = ({ children }) => {
         const userFarms = await response.json();
         setFarms(userFarms);
 
-        // Check local storage for the last selected farm
         const lastSelectedFarmId = localStorage.getItem('currentFarmId');
         
         if (lastSelectedFarmId && userFarms.some(f => f.id === lastSelectedFarmId)) {
@@ -38,35 +53,25 @@ export const FarmProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Farm context error:", error);
-        // Handle error (e.g., show notification)
       } finally {
         setIsLoading(false);
       }
-    } else if (status === 'unauthenticated') {
-        setIsLoading(false);
+    } else {
+      setIsLoading(false);
     }
-  }, [session, status]);
+  }, [session, userType, selectFarm]);
 
   useEffect(() => {
-    fetchFarms();
-  }, [fetchFarms]);
-
-  const selectFarm = async (farmId) => {
-    try {
-        const response = await fetch(`/api/farms/${farmId}/details`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch farm details');
-        }
-        const farmDetails = await response.json();
-        setCurrentFarm(farmDetails);
-        localStorage.setItem('currentFarmId', farmId);
-    } catch (error) {
-        console.error("Failed to select farm:", error);
-        // Handle error
+    if (status !== 'loading') {
+      fetchFarms();
     }
-  };
+  }, [status, fetchFarms]);
 
-  const value = {
+  if (status === 'loading' || (isLoading && userType === 'FARMER')) {
+    return <LoadingSpinner fullScreen={true} />;
+  }
+
+  const farmerValue = {
     farms,
     currentFarm,
     setCurrentFarm: selectFarm,
@@ -74,12 +79,18 @@ export const FarmProvider = ({ children }) => {
     isLoading,
   };
 
-  if (isLoading && status === 'loading') {
-      return <LoadingSpinner fullScreen={true} />;
-  }
+  const nonFarmerValue = {
+    farms: [],
+    currentFarm: null,
+    setCurrentFarm: () => {},
+    refreshFarms: () => {},
+    isLoading: false,
+  };
+
+  const contextValue = (userType === 'FARMER') ? farmerValue : nonFarmerValue;
 
   return (
-    <FarmContext.Provider value={value}>
+    <FarmContext.Provider value={contextValue}>
       {children}
     </FarmContext.Provider>
   );

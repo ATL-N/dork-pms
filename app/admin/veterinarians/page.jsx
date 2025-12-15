@@ -59,7 +59,13 @@ const StatusBadge = ({ status }) => {
         APPROVED: { text: 'Approved', color: 'bg-green-500', icon: UserCheck },
         REJECTED: { text: 'Rejected', color: 'bg-red-500', icon: XCircle },
     };
-    const { text, color, icon: Icon } = statusMap[status] || {};
+    const statusDetails = statusMap[status];
+
+    if (!statusDetails) {
+        return null;
+    }
+
+    const { text, color, icon: Icon } = statusDetails;
     return (
         <span className={`px-2 py-1 text-xs font-medium text-white rounded-full flex items-center gap-1 ${color}`}>
             <Icon size={14} /> {text}
@@ -78,10 +84,10 @@ const ActionMenu = ({ vet, onUpdate, onDelete }) => {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-[color:var(--card)] border border-[color:var(--border)] rounded-md shadow-lg z-10">
                     <ul>
-                        {vet.vetProfile.approvalStatus !== 'APPROVED' && (
+                        {vet.vetProfile?.approvalStatus !== 'APPROVED' && (
                             <li><button onClick={() => { onUpdate(vet.id, 'APPROVED'); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-[color:var(--accent)] flex items-center gap-2"><UserCheck size={14} /> Approve</button></li>
                         )}
-                        {vet.vetProfile.approvalStatus !== 'REJECTED' && (
+                        {vet.vetProfile?.approvalStatus !== 'REJECTED' && (
                             <li><button onClick={() => { onUpdate(vet.id, 'REJECTED'); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-[color:var(--accent)] flex items-center gap-2"><XCircle size={14} /> Reject</button></li>
                         )}
                         <li><button onClick={() => { onDelete(vet.id); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-[color:var(--accent)] text-red-500 flex items-center gap-2"><Trash2 size={14} /> Delete</button></li>
@@ -173,17 +179,17 @@ export default function AdminVetsPage() {
                                 <img src={vet.image || '/default-avatar.png'} alt={vet.name} className="w-12 h-12 rounded-full" />
                                 <div>
                                     <p className="font-bold">{vet.name}</p>
-                                    <p className="text-sm text-[color:var(--muted-foreground)]">{vet.vetProfile.specialization}</p>
+                                    <p className="text-sm text-[color:var(--muted-foreground)]">{vet.vetProfile?.specialization || 'No specialization'}</p>
                                     <p className="text-xs text-[color:var(--muted-foreground)]">{vet.email}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                {vet.vetProfile.qualificationUrl && (
+                                {vet.vetProfile?.qualificationUrl && (
                                     <a href={vet.vetProfile.qualificationUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs flex items-center gap-1">
                                         <Download size={14} /> Doc
                                     </a>
                                 )}
-                                <StatusBadge status={vet.vetProfile.approvalStatus} />
+                                <StatusBadge status={vet.vetProfile?.approvalStatus} />
                                 <ActionMenu vet={vet} onUpdate={handleUpdateStatus} onDelete={openDeleteConfirm} />
                             </div>
                         </li>

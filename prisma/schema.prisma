@@ -126,6 +126,7 @@ model Farm {
 
   @@index([name])
   @@index([latitude, longitude])
+  @@index([location])
 }
 
 model FarmSummary {
@@ -179,6 +180,8 @@ model User {
   growthRecords           GrowthRecord[]
   PasswordResetToken      PasswordResetToken[]
   interactions            UserAdInteraction[]
+
+  @@index([createdAt])
 }
 
 model CustomTaskSchedule {

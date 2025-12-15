@@ -57,6 +57,7 @@ export default auth(async function middleware(req) {
     "/auth/signup",
     "/auth/vet-signup",
     "/veterinarians",
+    "/market",
     "/",
   ];
 

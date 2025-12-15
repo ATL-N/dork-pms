@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Feather, DollarSign, BarChart2, ShieldCheck, CheckCircle, Menu, X } from 'lucide-react';
+import { Feather, DollarSign, BarChart2, ShieldCheck, CheckCircle, Menu, X, ShoppingCart } from 'lucide-react';
 import LoadingSpinner from './components/LoadingSpinner';
 
 const DownloadAppBanner = () => {
@@ -30,81 +30,31 @@ const DownloadAppBanner = () => {
   );
 };
 
+const FarmerFeatureCard = ({ icon: Icon, title, description }) => (
+    <div className="card p-6">
+        <div className="flex items-start">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg bg-[color:var(--primary)] text-white mr-6">
+                <Icon size={24} />
+            </div>
+            <div>
+                <h3 className="text-xl font-bold mb-2">{title}</h3>
+                <p className="text-[color:var(--muted-foreground)]">{description}</p>
+            </div>
+        </div>
+    </div>
+);
+
 export default function LandingPage() {
   const { data: session, status } = useSession();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const renderAuthButtons = (isMobile = false) => {
-    const buttonClass = isMobile ? "w-full text-center" : "";
-    if (status === 'loading') {
-      return <div className={`w-36 h-10 flex items-center justify-center ${buttonClass}`}><LoadingSpinner size="h-6 w-6" /></div>;
-    }
-    if (status === 'authenticated') {
-      return <Link href="/dashboard" className={`btn-primary ${buttonClass}`}>Go to Dashboard</Link>;
-    }
-    return (
-      <>
-        <Link href="/auth/signin" className={`text-sm font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] transition-colors ${buttonClass}`}>Sign In</Link>
-        <Link href="/auth/signup" className={`btn-primary ${buttonClass}`}>Get Started</Link>
-      </>
-    );
-  };
-
-  const navLinks = (
-    <>
-      <Link href="#features" className="text-sm font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] transition-colors">Features</Link>
-      <Link href="/market" className="text-sm font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] transition-colors">Marketplace</Link>
-      <Link href="#pricing" className="text-sm font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] transition-colors">Pricing</Link>
-      <Link href="#contact" className="text-sm font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] transition-colors">Contact</Link>
-    </>
-  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[color:var(--background)] text-[color:var(--foreground)]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-[color:var(--border)] bg-[color:var(--background)]/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Feather className="w-7 h-7 text-[color:var(--primary)]" />
-              <span className="text-xl font-bold">Dork PMS</span>
-            </Link>
-            <nav className="hidden md:flex items-center gap-6">{navLinks}</nav>
-            <div className="hidden md:flex items-center gap-4">
-              {renderAuthButtons()}
-            </div>
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col items-center gap-4 border-t border-[color:var(--border)]">
-              {navLinks}
-              <div className="w-full flex flex-col items-center gap-4 pt-4 border-t border-[color:var(--border)]">
-                {renderAuthButtons(true)}
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
+    <>
       <DownloadAppBanner />
 
       {/* Main Content */}
       <main className="flex-grow">
-        {/* Hero Section */}
+        
+        {/* Farmer Hero Section */}
         <section className="py-20 sm:py-28 lg:py-32">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
@@ -115,16 +65,14 @@ export default function LandingPage() {
                 Streamline your operations, boost productivity, and increase
                 profitability with our all-in-one solution.
               </p>
-              {status !== "authenticated" && (
-                <div className="mt-8 flex justify-center lg:justify-start">
-                  <Link
-                    href="/auth/signup"
-                    className="btn-primary py-3 px-8 text-lg rounded-full transition-transform transform hover:scale-105"
-                  >
-                    Get Started for Free
-                  </Link>
-                </div>
-              )}
+              <div className="mt-8 flex justify-center lg:justify-start">
+                <Link
+                  href={status === 'authenticated' ? "/dashboard" : "/auth/signup"}
+                  className="btn-primary py-3 px-8 text-lg rounded-full transition-transform transform hover:scale-105"
+                >
+                  {status === 'authenticated' ? "Go to Dashboard" : "Get Started for Free"}
+                </Link>
+              </div>
             </div>
             <div className="hidden lg:block">
               <img
@@ -136,56 +84,40 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-20 sm:py-24 bg-(--muted)">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold">
-                Why Choose Dork PMS?
-              </h2>
-              <p className="mt-4 text-lg text-(--muted-foreground)">
-                An integrated platform designed to give you a bird's-eye view of
-                your entire operation.
-              </p>
-            </div>
-            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                {
-                  icon: Feather,
-                  title: "Complete Flock Management",
-                  desc: "Track the entire lifecycle of your flocks, from hatch to sale, with detailed records.",
-                },
-                {
-                  icon: DollarSign,
-                  title: "Integrated Financials",
-                  desc: "Manage expenses, revenues, and invoices with ease. Get a clear picture of your farm's financial health.",
-                },
-                {
-                  icon: BarChart2,
-                  title: "Powerful Analytics",
-                  desc: "Make data-driven decisions with comprehensive reports on production, performance, and profitability.",
-                },
-                {
-                  icon: ShieldCheck,
-                  title: "Multi-User & Multi-Farm",
-                  desc: "Collaborate with your team and manage multiple farms from a single, secure platform.",
-                },
-              ].map((feature, i) => (
-                <div
-                  key={i}
-                  className="card p-8 text-center flex flex-col items-center"
-                >
-                  <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[color:var(--primary)] text-white mb-6">
-                    <feature.icon size={24} />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-[color:var(--muted-foreground)]">
-                    {feature.desc}
-                  </p>
+        {/* Farmer Features Section */}
+        <section id="features" className="py-20 sm:py-24 bg-[color:var(--muted)]">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center max-w-3xl mx-auto">
+                    <h2 className="text-3xl sm:text-4xl font-bold">
+                        A Smarter Way to Manage Your Farm
+                    </h2>
+                    <p className="mt-4 text-lg text-[color:var(--muted-foreground)]">
+                        From flock management to financial tracking, Dork PMS provides the tools you need to succeed.
+                    </p>
                 </div>
-              ))}
+                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <FarmerFeatureCard
+                        icon={BarChart2}
+                        title="Powerful Analytics"
+                        description="Stop guessing. Make data-driven decisions with comprehensive reports on production, performance, and profitability."
+                    />
+                    <FarmerFeatureCard
+                        icon={DollarSign}
+                        title="Integrated Financials"
+                        description="Plug financial leaks. Manage expenses, revenues, and invoices with ease to get a clear picture of your farm's financial health."
+                    />
+                    <FarmerFeatureCard
+                        icon={Feather}
+                        title="Complete Flock Management"
+                        description="Say goodbye to spreadsheets. Track the entire lifecycle of your flocks, from hatch to sale, with detailed digital records."
+                    />
+                    <FarmerFeatureCard
+                        icon={ShieldCheck}
+                        title="Health & Task Management"
+                        description="Never miss a vaccination or task again. Automate schedules, monitor flock health, and keep impeccable records for compliance."
+                    />
+                </div>
             </div>
-          </div>
         </section>
 
         {/* Pricing Section */}
@@ -303,6 +235,26 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Customer-focused Section */}
+        <section id="buy-eggs" className="py-20 sm:py-24 bg-[color:var(--muted)]">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 className="text-3xl sm:text-4xl font-bold">Looking to Buy Fresh Eggs?</h2>
+                <p className="mt-4 text-lg text-[color:var(--muted-foreground)] max-w-2xl mx-auto">
+                    Connect directly with local farmers, enjoy farm-fresh eggs, and save money by cutting out the middleman.
+                </p>
+                <div className="mt-8">
+                    <Link
+                        href="/market"
+                        className="inline-flex items-center justify-center gap-2 btn-primary py-3 px-8 text-lg rounded-full transition-transform transform hover:scale-105"
+                    >
+                        <ShoppingCart className="w-6 h-6" />
+                        Find Farms Near You
+                    </Link>
+                </div>
+            </div>
+        </section>
+
       </main>
 
       {/* Footer */}
@@ -313,6 +265,6 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-    </div>
+    </>
   );
 }

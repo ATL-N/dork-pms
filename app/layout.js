@@ -9,14 +9,16 @@ import { FarmProvider } from "./context/FarmContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import SidebarWrapper from "./components/layout/SidebarWrapper";
 import HeaderWrapper from "./components/layout/HeaderWrapper";
+import PublicHeader from "./components/layout/PublicHeader";
 
 export default function RootLayout({ children }) {
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
 
-  // Only show sidebar and header for routes inside the app
-  const showAppLayout = pathname !== '/';
+  // Define conditions for different layouts
+  const isAppPage = !['/', '/market', '/auth', '/veterinarians'].some(path => path === '/' ? pathname === path : pathname.startsWith(path));
+  const hasPublicHeader = ['/', '/market', '/veterinarians'].some(path => pathname.startsWith(path) && path !== '/');
 
   useEffect(() => {
     if (
@@ -42,6 +44,8 @@ export default function RootLayout({ children }) {
     }
     setDarkMode(!darkMode);
   };
+  
+  const isHomePage = pathname === '/';
 
   return (
     <html lang="en" className={darkMode ? 'dark' : ''}>
@@ -49,7 +53,8 @@ export default function RootLayout({ children }) {
         <Providers>
           <NotificationProvider>
             <FarmProvider>
-              {showAppLayout ? (
+              {isAppPage ? (
+                // Full App Layout (Sidebar + App Header)
                 <div className="flex h-screen overflow-hidden">
                   <SidebarWrapper sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
                   <div className="flex-1 flex flex-col overflow-hidden">
@@ -65,9 +70,13 @@ export default function RootLayout({ children }) {
                   </div>
                 </div>
               ) : (
-                <main className="bg-[color:var(--background)]">
-                  {children}
-                </main>
+                // Public or Minimal Layout
+                <div className="flex flex-col min-h-screen">
+                  {(isHomePage || hasPublicHeader) && <PublicHeader />}
+                  <main className="flex-grow bg-[color:var(--background)]">
+                    {children}
+                  </main>
+                </div>
               )}
             </FarmProvider>
           </NotificationProvider>

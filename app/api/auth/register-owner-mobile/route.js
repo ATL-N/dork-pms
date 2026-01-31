@@ -7,18 +7,10 @@ const prisma = new PrismaClient();
 
 export async function POST(request) {
   try {
-    const { email, name, password, phoneNumber } = await request.json();
+    const { name, password, phoneNumber } = await request.json();
 
-    if (!email || !name || !password || !phoneNumber) {
+    if (!name || !password || !phoneNumber) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
-    }
-
-    const existingUserByEmail = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUserByEmail) {
-      return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
     }
 
     const existingUserByPhone = await prisma.user.findUnique({
@@ -34,7 +26,6 @@ export async function POST(request) {
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
         phoneNumber,
         passwordHash,
         userType: 'FARMER',
@@ -62,7 +53,6 @@ export async function POST(request) {
 
     const payload = {
       id: newUser.id,
-      email: newUser.email,
       name: newUser.name,
       userType: newUser.userType,
     };

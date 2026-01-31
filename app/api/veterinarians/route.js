@@ -1,12 +1,12 @@
 // app/api/veterinarians/route.js
-import prisma from '@/app/lib/prisma';
-import { NextResponse } from 'next/server';
+import prisma from "@/app/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     const vets = await prisma.user.findMany({
       where: {
-        userType: 'VET',
+        userType: "VET",
         vetProfile: {
           isVerified: true,
         },
@@ -19,7 +19,7 @@ export async function GET() {
         profile: {
           select: {
             country: true,
-          }
+          },
         },
         vetProfile: {
           select: {
@@ -33,7 +33,7 @@ export async function GET() {
 
     return NextResponse.json(vets);
   } catch (error) {
-    console.error('[API/VETERINARIANS]', error);
-    return new Response('Internal Server Error', { status: 500 });
+    console.error("[API/VETERINARIANS]", error);
+    return new Response("Internal Server Error", { status: 500 });
   }
 }

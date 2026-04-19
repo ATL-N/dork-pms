@@ -237,6 +237,7 @@ model VerificationToken {
 enum OtpPurpose {
   PASSWORD_RESET
   PASSWORD_CHANGE
+  LOGIN
 }
 
 model PasswordResetToken {

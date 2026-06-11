@@ -45,6 +45,34 @@ async function verifyBearerToken(authHeader) {
 
 export default auth(async function middleware(req) {
   const { pathname } = req.nextUrl;
+  const origin = req.headers.get("origin");
+
+  // Define allowed origins for CORS
+  const allowedOrigins = [
+    "https://app.pf.dorkordi.site", // Your Flutter PWA domain
+    "http://localhost:3000",       // Local Next.js
+    "http://localhost:8000",       // Local Flutter Web
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5000",
+    process.env.NEXTAUTH_URL,
+  ].filter(Boolean);
+
+  const isAllowedOrigin = allowedOrigins.includes(origin);
+
+  // Handle preflight OPTIONS requests
+  if (req.method === "OPTIONS") {
+    if (isAllowedOrigin) {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id, x-user-email, x-user-type",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+  }
 
   // Only log in development
   if (process.env.NODE_ENV === "development") {
@@ -73,10 +101,19 @@ export default auth(async function middleware(req) {
     // "/api/users",
   ];
 
+  // Helper to add CORS headers to a response
+  const addCorsHeaders = (response) => {
+    if (isAllowedOrigin) {
+      response.headers.set("Access-Control-Allow-Origin", origin);
+      response.headers.set("Access-Control-Allow-Credentials", "true");
+    }
+    return response;
+  };
+
   // Special handling for veterinarians route: GET is public, other methods are protected
   if (pathname.startsWith("/api/veterinarians")) {
     if (req.method === "GET") {
-      return NextResponse.next();
+      return addCorsHeaders(NextResponse.next());
     }
   }
 
@@ -84,7 +121,7 @@ export default auth(async function middleware(req) {
   const isPublicApi = publicApiPaths.some((path) => pathname.startsWith(path));
 
   if (isPublicApi) {
-    return NextResponse.next();
+    return addCorsHeaders(NextResponse.next());
   }
 
   // ============================================
@@ -104,13 +141,13 @@ export default auth(async function middleware(req) {
         requestHeaders.set("x-user-email", payload.email || "");
         requestHeaders.set("x-user-type", payload.userType || "");
 
-        return NextResponse.next({ request: { headers: requestHeaders } });
+        return addCorsHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
       } else {
         // Invalid Bearer token
-        return NextResponse.json(
+        return addCorsHeaders(NextResponse.json(
           { message: "Authentication required: Invalid token" },
           { status: 401 }
-        );
+        ));
       }
     }
 
@@ -123,18 +160,18 @@ export default auth(async function middleware(req) {
       requestHeaders.set("x-user-email", user.email || "");
       requestHeaders.set("x-user-type", user.userType || "");
 
-      return NextResponse.next({
+      return addCorsHeaders(NextResponse.next({
         request: {
           headers: requestHeaders,
         },
-      });
+      }));
     }
 
     // 3. No valid authentication found
-    return NextResponse.json(
+    return addCorsHeaders(NextResponse.json(
       { message: "Authentication required" },
       { status: 401 }
-    );
+    ));
   }
 
   // ============================================

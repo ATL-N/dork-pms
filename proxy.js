@@ -49,7 +49,7 @@ export default auth(async function middleware(req) {
 
   // Define allowed origins for CORS
   const allowedOrigins = [
-    "https://app.pf.dorkordi.site", // Your Flutter PWA domain
+    "https://app.pf.edinception.com", // Your Flutter PWA domain
     "http://localhost:3000",       // Local Next.js
     "http://localhost:8000",       // Local Flutter Web
     "http://127.0.0.1:3000",

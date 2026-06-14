@@ -71,7 +71,7 @@ export async function POST(request) {
             const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout
 
             const broadcastResponse = await fetch(
-              "https://pf.dorkordi.site/:8080/broadcast",
+              "https://pf.edinception.com/:8080/broadcast",
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

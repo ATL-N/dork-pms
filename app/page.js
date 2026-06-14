@@ -8,7 +8,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 const DownloadAppBanner = () => {
   const apkUrl = "https://f003.backblazeb2.com/file/dorkpms/nkokoapp-v2.apk";
-  const pwaUrl = "https://app.pf.dorkordi.site"; // You can move this to .env later
+  const pwaUrl = "https://app.pf.edinception.com"; // You can move this to .env later
   return (
     <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -24,18 +24,18 @@ const DownloadAppBanner = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 01-2 2H10a2 2 0 01-2-2z" />
             </svg>
-            Open Web App (PWA)
+            Download App
           </a>
-          <a
-            href={apkUrl}
-            download
-            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110-2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            Download APK
-          </a>
+          // <a
+          //   href={apkUrl}
+          //   download
+          //   className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          // >
+          //   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          //     <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110-2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          //   </svg>
+          //   Download APK
+          // </a>
         </div>
       </div>
     </div>
